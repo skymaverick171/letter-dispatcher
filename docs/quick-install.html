@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Быстрая установка Letter Dispatcher</title>
+<style>
+  :root {
+    --bg: #f2f4f1;
+    --surface: #ffffff;
+    --surface-2: #eceee9;
+    --ink: #1f2a24;
+    --muted: #5c6a63;
+    --border: #d9ddd4;
+    --accent: #1e4b8f;
+    --accent-ink: #ffffff;
+    --accent-soft: #e3eaf6;
+    --stamp: #b23a3a;
+    --stamp-soft: #f4e2e2;
+    --good: #2f7a4f;
+    --good-soft: #e3f1e8;
+    --shadow: 0 1px 2px rgba(31,42,36,0.06), 0 8px 24px -12px rgba(31,42,36,0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181a; --surface: #1b2124; --surface-2: #222a2d; --ink: #e7ebe6;
+      --muted: #9aa89f; --border: #333d3f; --accent: #7aa6e6; --accent-ink: #0f1a2b;
+      --accent-soft: #223349; --stamp: #e08a8a; --stamp-soft: #3a2626; --good: #79c795;
+      --good-soft: #1e2f24; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181a; --surface: #1b2124; --surface-2: #222a2d; --ink: #e7ebe6;
+    --muted: #9aa89f; --border: #333d3f; --accent: #7aa6e6; --accent-ink: #0f1a2b;
+    --accent-soft: #223349; --stamp: #e08a8a; --stamp-soft: #3a2626; --good: #79c795;
+    --good-soft: #1e2f24; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  .stripe {
+    height: 6px;
+    background: repeating-linear-gradient(-45deg,
+      var(--accent) 0 14px, var(--surface) 14px 20px,
+      var(--stamp) 20px 34px, var(--surface) 34px 40px);
+  }
+  .shell { max-width: 560px; margin: 0 auto; padding: 36px 20px 60px; position: relative; }
+
+  .lang-switch {
+    position: absolute; top: 36px; right: 20px;
+    display: flex; gap: 2px; background: var(--surface-2); padding: 3px;
+    border-radius: 8px;
+  }
+  .lang-switch button {
+    font: inherit; font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 5px 8px; border-radius: 6px; border: none; background: transparent;
+    color: var(--muted); cursor: pointer;
+  }
+  .lang-switch button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--stamp);
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif; font-weight: 600;
+    font-size: clamp(26px, 6vw, 34px); line-height: 1.14; margin: 10px 0 8px;
+    text-wrap: balance; max-width: 88%;
+  }
+  .lede { color: var(--muted); margin: 0 0 24px; max-width: 42ch; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: var(--shadow); padding: 26px 24px;
+  }
+
+  .platform-switch {
+    display: flex; gap: 6px; background: var(--surface-2); padding: 4px;
+    border-radius: 10px; margin-bottom: 22px;
+  }
+  .platform-switch button {
+    flex: 1; font: inherit; font-size: 13px; font-weight: 600;
+    padding: 8px 6px; border-radius: 7px; border: none; background: transparent;
+    color: var(--muted); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 6px;
+  }
+  .platform-switch button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+  .platform-switch svg { flex: none; }
+
+  .platform-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .platform-head .icon {
+    width: 34px; height: 34px; border-radius: 8px; background: var(--accent-soft);
+    color: var(--accent); display: flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+  .platform-head h2 {
+    font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 19px;
+    margin: 0;
+  }
+  .platform-head .sub { font-size: 13px; color: var(--muted); margin: 1px 0 0; }
+
+  ol.steps { margin: 0 0 18px; padding: 0; list-style: none; counter-reset: step; }
+  ol.steps li {
+    counter-increment: step; position: relative;
+    padding: 1px 0 0 34px; margin-bottom: 14px; font-size: 15px;
+  }
+  ol.steps li:last-child { margin-bottom: 0; }
+  ol.steps li::before {
+    content: counter(step);
+    position: absolute; left: 0; top: -1px;
+    width: 23px; height: 23px; border-radius: 50%;
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--muted); font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px; font-weight: 500; display: flex;
+    align-items: center; justify-content: center;
+  }
+  ol.steps li strong { color: var(--ink); }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-weight: 600; font-size: 15.5px;
+    padding: 13px 18px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--accent); color: var(--accent-ink); text-decoration: none;
+    cursor: pointer; width: 100%; border-color: transparent;
+  }
+  .btn:active { transform: translateY(1px); }
+
+  .qr-row {
+    display: flex; align-items: center; gap: 14px; margin-top: 20px;
+    padding-top: 20px; border-top: 1px dashed var(--border);
+  }
+  .qr-box {
+    width: 84px; height: 84px; background: #fff; border-radius: 8px;
+    border: 1px solid var(--border); flex: none; display: flex;
+    align-items: center; justify-content: center; padding: 5px; overflow: hidden;
+  }
+  .qr-box img, .qr-box canvas { width: 100%; height: 100%; display: block; }
+  .qr-text { font-size: 13.5px; color: var(--muted); }
+  .qr-text strong { color: var(--ink); display: block; font-size: 14px; margin-bottom: 2px; }
+  [hidden] { display: none !important; }
+
+  .more {
+    margin-top: 18px; text-align: center;
+  }
+  .more summary {
+    font-size: 13.5px; color: var(--muted); cursor: pointer; list-style: none;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .more summary::-webkit-details-marker { display: none; }
+  .more summary .chev { transition: transform 0.15s ease; }
+  .more[open] summary .chev { transform: rotate(180deg); }
+  .more-body { margin-top: 14px; text-align: left; font-size: 13.5px; color: var(--muted); }
+  .more-body a { color: var(--accent); }
+  .more-body ul { margin: 8px 0 0; padding-left: 18px; }
+  .more-body li { margin-bottom: 6px; }
+
+  footer {
+    margin-top: 30px; color: var(--muted); font-size: 12.5px;
+    font-family: "IBM Plex Mono", monospace; text-align: center;
+  }
+  @media (max-width: 420px) {
+    .lang-switch { position: static; margin-bottom: 14px; display: inline-flex; }
+    h1 { max-width: 100%; }
+  }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onerror="window.__qrLoadFailed=true"></script>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="shell">
+  <div class="lang-switch" id="langSwitch">
+    <button data-lang="ru">RU</button>
+    <button data-lang="en">EN</button>
+    <button data-lang="fr">FR</button>
+  </div>
+
+  <div class="eyebrow">Letter Dispatcher</div>
+  <h1 id="tTitle">Установка за 30 секунд</h1>
+  <p class="lede" id="tLede">Определили вашу систему — ниже ровно те шаги, которые нужны именно на ней. Ничего скачивать и собирать не нужно.</p>
+
+  <div class="card">
+    <div class="platform-switch" id="switch">
+      <button data-p="windows"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Windows</button>
+      <button data-p="android"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>Android</button>
+      <button data-p="ios"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 5h2"/></svg><span id="iosLabel">iPhone/iPad</span></button>
+    </div>
+
+    <div class="platform-head">
+      <span class="icon" id="pIcon"></span>
+      <div>
+        <h2 id="pTitle">Windows</h2>
+        <p class="sub" id="pSub">Chrome или Edge</p>
+      </div>
+    </div>
+
+    <ol class="steps" id="pSteps"></ol>
+
+    <a class="btn" id="openBtn" href="https://skymaverick171.github.io/letter-dispatcher/" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      <span id="tOpenBtn">Открыть Letter Dispatcher</span>
+    </a>
+
+    <div class="qr-row">
+      <div class="qr-box" id="qrBox"></div>
+      <div class="qr-text">
+        <strong id="tQrStrong">Или отсканируйте с телефона</strong>
+        <span id="tQrText">Наведите камеру телефона на код — откроется та же ссылка.</span>
+      </div>
+    </div>
+  </div>
+
+  <details class="more">
+    <summary><span id="tMoreSummary">Другие варианты установки</span> <svg class="chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="more-body">
+      <ul id="tMoreList"></ul>
+    </div>
+  </details>
+
+  <p class="link-fallback" style="text-align:center; margin-top:16px; font-size:13px; color:var(--muted);">Нужны инструкции по всем платформам? <a href="install.html" style="color:var(--accent);">Полная страница установки →</a></p>
+  <footer id="tFooter">Letter Dispatcher · быстрая установка</footer>
+</div>
+
+<script>
+(function () {
+  var APP_URL = "https://skymaverick171.github.io/letter-dispatcher/";
+
+  var ICONS = {
+    windows: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    android: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>',
+    ios: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 5h2"/></svg>'
+  };
+
+  var I18N = {
+    ru: {
+      title: "Установка за 30 секунд",
+      lede: "Определили вашу систему — ниже ровно те шаги, которые нужны именно на ней. Ничего скачивать и собирать не нужно.",
+      iosLabel: "iPhone/iPad",
+      openBtn: "Открыть Letter Dispatcher",
+      qrStrong: "Или отсканируйте с телефона",
+      qrText: "Наведите камеру телефона на код — откроется та же ссылка.",
+      moreSummary: "Другие варианты установки",
+      moreList: [
+        "<strong>Подробная инструкция для всех систем</strong> с картинками по каждому шагу — на случай, если что-то не совпало.",
+        "<strong>Отдельная программа для Windows или Android</strong> (обычный .exe / .apk, без браузера) — тоже существует; спросите ссылку у того, кто прислал вам эту страницу."
+      ],
+      footer: "Letter Dispatcher · быстрая установка",
+      platforms: {
+        windows: {
+          title: "Windows", sub: "Chrome или Edge",
+          steps: [
+            "Нажмите кнопку <strong>«Открыть Letter Dispatcher»</strong> ниже — откроется в браузере.",
+            "В шапке страницы появится кнопка <strong>«Install app»</strong> — нажмите её.",
+            "Если кнопки нет: значок ⊕ в адресной строке справа, либо меню (⋮) → <strong>«Установить Letter Dispatcher…»</strong>.",
+            "Готово — иконка появится на рабочем столе и в меню «Пуск», как у обычной программы."
+          ]
+        },
+        android: {
+          title: "Android", sub: "Chrome",
+          steps: [
+            "Нажмите кнопку <strong>«Открыть Letter Dispatcher»</strong> ниже — откроется в Chrome.",
+            "Нажмите <strong>«Install app»</strong> в шапке страницы, или меню (⋮) → <strong>«Установить приложение»</strong>.",
+            "Подтвердите — готово. Иконка появится на главном экране."
+          ]
+        },
+        ios: {
+          title: "iPhone / iPad", sub: "обязательно в Safari",
+          steps: [
+            "Откройте ссылку <strong>именно в Safari</strong> (в Chrome на iPhone этот способ не работает).",
+            "Нажмите значок <strong>«Поделиться»</strong> (квадрат со стрелкой вверх) внизу экрана.",
+            "Выберите <strong>«На экран «Домой»»</strong> — возможно, нужно пролистать список.",
+            "Нажмите <strong>«Добавить»</strong> в углу — готово."
+          ]
+        }
+      }
+    },
+    en: {
+      title: "Install in 30 seconds",
+      lede: "We detected your system — the steps below are exactly what you need on it. Nothing to download or build.",
+      iosLabel: "iPhone/iPad",
+      openBtn: "Open Letter Dispatcher",
+      qrStrong: "Or scan with your phone",
+      qrText: "Point your phone's camera at the code — it opens the same link.",
+      moreSummary: "Other ways to install",
+      moreList: [
+        "<strong>A detailed guide for every system</strong> with a picture for each step — in case something didn't match.",
+        "<strong>A standalone program for Windows or Android</strong> (a regular .exe / .apk, no browser needed) also exists — ask whoever sent you this page for the link."
+      ],
+      footer: "Letter Dispatcher · quick install",
+      platforms: {
+        windows: {
+          title: "Windows", sub: "Chrome or Edge",
+          steps: [
+            "Click <strong>\"Open Letter Dispatcher\"</strong> below — it opens in your browser.",
+            "An <strong>\"Install app\"</strong> button will appear at the top of the page — click it.",
+            "No button? Look for the ⊕ icon on the right of the address bar, or the menu (⋮) → <strong>\"Install Letter Dispatcher…\"</strong>.",
+            "Done — an icon appears on your desktop and in the Start menu, just like a regular program."
+          ]
+        },
+        android: {
+          title: "Android", sub: "Chrome",
+          steps: [
+            "Tap <strong>\"Open Letter Dispatcher\"</strong> below — it opens in Chrome.",
+            "Tap <strong>\"Install app\"</strong> at the top of the page, or the menu (⋮) → <strong>\"Install app\"</strong>.",
+            "Confirm — done. An icon appears on your home screen."
+          ]
+        },
+        ios: {
+          title: "iPhone / iPad", sub: "Safari only",
+          steps: [
+            "Open the link <strong>in Safari specifically</strong> (this doesn't work in Chrome on iPhone).",
+            "Tap the <strong>Share</strong> icon (a square with an arrow up) at the bottom of the screen.",
+            "Choose <strong>\"Add to Home Screen\"</strong> — you may need to scroll the list.",
+            "Tap <strong>\"Add\"</strong> in the corner — done."
+          ]
+        }
+      }
+    },
+    fr: {
+      title: "Installation en 30 secondes",
+      lede: "Nous avons détecté votre système — les étapes ci-dessous sont exactement celles qu'il vous faut. Rien à télécharger ni à compiler.",
+      iosLabel: "iPhone/iPad",
+      openBtn: "Ouvrir Letter Dispatcher",
+      qrStrong: "Ou scannez avec votre téléphone",
+      qrText: "Pointez l'appareil photo de votre téléphone vers le code — il ouvre le même lien.",
+      moreSummary: "Autres façons d'installer",
+      moreList: [
+        "<strong>Un guide détaillé pour chaque système</strong> avec une image pour chaque étape — si quelque chose ne correspond pas.",
+        "<strong>Un programme autonome pour Windows ou Android</strong> (un .exe / .apk classique, sans navigateur) existe aussi — demandez le lien à la personne qui vous a envoyé cette page."
+      ],
+      footer: "Letter Dispatcher · installation rapide",
+      platforms: {
+        windows: {
+          title: "Windows", sub: "Chrome ou Edge",
+          steps: [
+            "Cliquez sur <strong>« Ouvrir Letter Dispatcher »</strong> ci-dessous — la page s'ouvre dans le navigateur.",
+            "Un bouton <strong>« Install app »</strong> apparaît en haut de la page — cliquez dessus.",
+            "Pas de bouton ? L'icône ⊕ à droite de la barre d'adresse, ou le menu (⋮) → <strong>« Installer Letter Dispatcher… »</strong>.",
+            "C'est fait — une icône apparaît sur le bureau et dans le menu Démarrer, comme un programme classique."
+          ]
+        },
+        android: {
+          title: "Android", sub: "Chrome",
+          steps: [
+            "Appuyez sur <strong>« Ouvrir Letter Dispatcher »</strong> ci-dessous — la page s'ouvre dans Chrome.",
+            "Appuyez sur <strong>« Install app »</strong> en haut de la page, ou menu (⋮) → <strong>« Installer l'application »</strong>.",
+            "Confirmez — c'est fait. Une icône apparaît sur l'écran d'accueil."
+          ]
+        },
+        ios: {
+          title: "iPhone / iPad", sub: "uniquement dans Safari",
+          steps: [
+            "Ouvrez le lien <strong>dans Safari uniquement</strong> (ça ne fonctionne pas dans Chrome sur iPhone).",
+            "Appuyez sur l'icône <strong>Partager</strong> (carré avec une flèche vers le haut) en bas de l'écran.",
+            "Choisissez <strong>« Sur l'écran d'accueil »</strong> — il faut parfois faire défiler la liste.",
+            "Appuyez sur <strong>« Ajouter »</strong> dans le coin — c'est fait."
+          ]
+        }
+      }
+    }
+  };
+
+  function detectLang() {
+    var nav = (navigator.language || "en").toLowerCase();
+    if (nav.indexOf("ru") === 0) return "ru";
+    if (nav.indexOf("fr") === 0) return "fr";
+    return "en";
+  }
+  function detectPlatform() {
+    var ua = navigator.userAgent || "";
+    if (/iphone|ipad|ipod/i.test(ua) && !window.MSStream) return "ios";
+    if (/android/i.test(ua)) return "android";
+    return "windows";
+  }
+
+  var state = { lang: detectLang(), platform: detectPlatform() };
+
+  function renderPlatform() {
+    var data = I18N[state.lang].platforms[state.platform];
+    document.getElementById("pIcon").innerHTML = ICONS[state.platform];
+    document.getElementById("pTitle").textContent = data.title;
+    document.getElementById("pSub").textContent = data.sub;
+    document.getElementById("pSteps").innerHTML = data.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("");
+    var buttons = document.querySelectorAll("#switch button");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.toggle("active", buttons[i].dataset.p === state.platform);
+    }
+  }
+
+  function renderLang() {
+    var t = I18N[state.lang];
+    document.getElementById("tTitle").textContent = t.title;
+    document.getElementById("tLede").textContent = t.lede;
+    document.getElementById("iosLabel").textContent = t.iosLabel;
+    document.getElementById("tOpenBtn").textContent = t.openBtn;
+    document.getElementById("tQrStrong").textContent = t.qrStrong;
+    document.getElementById("tQrText").textContent = t.qrText;
+    document.getElementById("tMoreSummary").textContent = t.moreSummary;
+    document.getElementById("tMoreList").innerHTML = t.moreList.map(function (s) { return "<li>" + s + "</li>"; }).join("");
+    document.getElementById("tFooter").textContent = t.footer;
+    document.documentElement.setAttribute("lang", state.lang);
+    var buttons = document.querySelectorAll("#langSwitch button");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.toggle("active", buttons[i].dataset.lang === state.lang);
+    }
+    renderPlatform();
+  }
+
+  var pButtons = document.querySelectorAll("#switch button");
+  for (var i = 0; i < pButtons.length; i++) {
+    pButtons[i].addEventListener("click", function () { state.platform = this.dataset.p; renderPlatform(); });
+  }
+  var lButtons = document.querySelectorAll("#langSwitch button");
+  for (var j = 0; j < lButtons.length; j++) {
+    lButtons[j].addEventListener("click", function () { state.lang = this.dataset.lang; renderLang(); });
+  }
+
+  renderLang();
+
+  // QR code — degrade gracefully if the library didn't load (e.g. offline).
+  try {
+    if (window.QRCode && !window.__qrLoadFailed) {
+      new QRCode(document.getElementById("qrBox"), {
+        text: APP_URL, width: 74, height: 74,
+        colorDark: "#1f2a24", colorLight: "#ffffff"
+      });
+    } else {
+      document.querySelector(".qr-row").hidden = true;
+    }
+  } catch (e) {
+    document.querySelector(".qr-row").hidden = true;
+  }
+})();
+</script>
+</body>
+</html>
