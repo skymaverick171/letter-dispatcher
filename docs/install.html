@@ -208,6 +208,20 @@
     </div>
   </section>
 
+  <section>
+    <h2><span class="num">04</span> <span id="tH2Sheets">Шаблон для Google Sheets</span></h2>
+    <p class="section-intro" id="tIntroSheets">Готовая таблица для быстрого импорта контактов — с нужными столбцами и примером заполнения.</p>
+    <div class="panel">
+      <div class="cta-row" style="margin-bottom: 0;">
+        <a class="btn primary" href="https://skymaverick171.github.io/letter-dispatcher/docs/google-sheets-template/Letter_Dispatcher_Contacts_Template.xlsx" download>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <span id="tSheetsBtn">Скачать шаблон (.xlsx)</span>
+        </a>
+      </div>
+      <p class="hint" id="tSheetsHint">Скачай файл, затем открой в Google Таблицах: «Файл» → «Импорт» → «Загрузить» — или просто открой его в Excel.</p>
+    </div>
+  </section>
+
   <p class="link-fallback" style="text-align:center; margin-top:20px; font-size:13px; color:var(--muted);">Нужна просто страница-кнопка, чтобы отправить другому человеку? <a href="get-app.html" style="color:var(--accent);">Открыть короткую версию →</a></p>
   <footer id="tFooter">Letter Dispatcher · установка на Windows / Android / iOS</footer>
 </div>
@@ -246,6 +260,10 @@
         "Нажать <strong>«Добавить»</strong> в правом верхнем углу."
       ],
       hintIos: "Внутри самого приложения тоже есть подсказка с этими же шагами — на случай, если забудется.",
+      h2Sheets: "Шаблон для Google Sheets",
+      introSheets: "Готовая таблица для быстрого импорта контактов — с нужными столбцами и примером заполнения.",
+      sheetsBtn: "Скачать шаблон (.xlsx)",
+      sheetsHint: "Скачай файл, затем открой в Google Таблицах: «Файл» → «Импорт» → «Загрузить» — или просто открой его в Excel.",
       footer: "Letter Dispatcher · установка на Windows / Android / iOS"
     },
     en: {
@@ -279,6 +297,10 @@
         "Tap <strong>\"Add\"</strong> in the top-right corner."
       ],
       hintIos: "The app itself also shows this same hint, in case you forget.",
+      h2Sheets: "Google Sheets template",
+      introSheets: "A ready-made spreadsheet for quickly importing contacts — with the right columns and a sample row.",
+      sheetsBtn: "Download template (.xlsx)",
+      sheetsHint: "Download the file, then open it in Google Sheets: \"File\" → \"Import\" → \"Upload\" — or just open it in Excel.",
       footer: "Letter Dispatcher · installing on Windows / Android / iOS"
     },
     fr: {
@@ -312,6 +334,10 @@
         "Appuyez sur <strong>« Ajouter »</strong> en haut à droite."
       ],
       hintIos: "L'application elle-même affiche aussi cette astuce, au cas où vous l'oublieriez.",
+      h2Sheets: "Modèle Google Sheets",
+      introSheets: "Un tableau prêt à l'emploi pour importer rapidement vos contacts — avec les bonnes colonnes et un exemple.",
+      sheetsBtn: "Télécharger le modèle (.xlsx)",
+      sheetsHint: "Téléchargez le fichier, puis ouvrez-le dans Google Sheets : « Fichier » → « Importer » → « Charger » — ou ouvrez-le simplement dans Excel.",
       footer: "Letter Dispatcher · installation sur Windows / Android / iOS"
     }
   };
@@ -344,6 +370,10 @@
     document.getElementById("tIntroIos").textContent = t.introIos;
     document.getElementById("stepsIos").innerHTML = stepsHtml(t.stepsIos);
     document.getElementById("tHintIos").textContent = t.hintIos;
+    document.getElementById("tH2Sheets").textContent = t.h2Sheets;
+    document.getElementById("tIntroSheets").textContent = t.introSheets;
+    document.getElementById("tSheetsBtn").textContent = t.sheetsBtn;
+    document.getElementById("tSheetsHint").textContent = t.sheetsHint;
     document.getElementById("tFooter").textContent = t.footer;
     document.documentElement.setAttribute("lang", lang);
     var buttons = document.querySelectorAll("#langSwitch button");
