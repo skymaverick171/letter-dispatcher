@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Установить Letter Dispatcher</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --bg: #f2f4f1; --surface: #ffffff; --surface-2: #eceee9; --ink: #1f2a24;
+    --muted: #5c6a63; --border: #d9ddd4; --accent: #1e4b8f; --accent-ink: #ffffff;
+    --accent-soft: #e3eaf6; --stamp: #b23a3a; --stamp-soft: #f4e2e2;
+    --shadow: 0 1px 2px rgba(31,42,36,0.06), 0 12px 32px -14px rgba(31,42,36,0.22);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181a; --surface: #1b2124; --surface-2: #222a2d; --ink: #e7ebe6;
+      --muted: #9aa89f; --border: #333d3f; --accent: #7aa6e6; --accent-ink: #0f1a2b;
+      --accent-soft: #223349; --stamp: #e08a8a; --stamp-soft: #3a2626;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181a; --surface: #1b2124; --surface-2: #222a2d; --ink: #e7ebe6;
+    --muted: #9aa89f; --border: #333d3f; --accent: #7aa6e6; --accent-ink: #0f1a2b;
+    --accent-soft: #223349; --stamp: #e08a8a; --stamp-soft: #3a2626;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px -14px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 16px; line-height: 1.55;
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  .stripe {
+    height: 6px; flex-shrink: 0;
+    background: repeating-linear-gradient(-45deg,
+      var(--accent) 0 14px, var(--surface) 14px 20px,
+      var(--stamp) 20px 34px, var(--surface) 34px 40px);
+  }
+  .shell {
+    max-width: 420px; margin: 0 auto; padding: 48px 24px 60px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    flex: 1;
+  }
+  .seal {
+    width: 64px; height: 64px; border-radius: 16px; background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 22px;
+  }
+  .seal svg { width: 30px; height: 30px; color: var(--accent); }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 500;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--stamp);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif; font-weight: 700;
+    font-size: clamp(26px, 7vw, 32px); line-height: 1.16; margin: 0 0 12px;
+    text-wrap: balance;
+  }
+  .lede {
+    color: var(--muted); margin: 0 0 32px; max-width: 34ch;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--accent); color: var(--accent-ink);
+    font-family: "IBM Plex Sans", sans-serif; font-weight: 600; font-size: 17px;
+    text-decoration: none; padding: 16px 30px; border-radius: 14px;
+    box-shadow: var(--shadow); width: 100%; justify-content: center;
+    transition: transform 0.15s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .steps {
+    margin-top: 36px; width: 100%; text-align: left;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px 22px; box-shadow: var(--shadow);
+  }
+  .steps-title {
+    font-family: "IBM Plex Mono", monospace; font-size: 11.5px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .steps ol { margin: 0; padding: 0 0 0 20px; }
+  .steps li { margin-bottom: 10px; }
+  .steps li:last-child { margin-bottom: 0; }
+  .steps b { color: var(--ink); }
+  .link-fallback {
+    margin-top: 24px; font-size: 13.5px; color: var(--muted); word-break: break-all;
+  }
+  .link-fallback a { color: var(--accent); }
+  footer {
+    text-align: center; padding: 18px 20px; color: var(--muted);
+    font-size: 12.5px; font-family: "IBM Plex Mono", monospace;
+  }
+</style>
+</head>
+<body>
+  <div class="stripe"></div>
+  <div class="shell">
+    <div class="seal">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+    </div>
+    <div class="eyebrow">Letter Dispatcher</div>
+    <h1>Установи приложение на телефон или компьютер</h1>
+    <p class="lede">Нажми кнопку ниже — откроется приложение, а браузер сам предложит установить его как обычную программу.</p>
+
+    <a class="btn" href="https://skymaverick171.github.io/letter-dispatcher/" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      Открыть Letter Dispatcher
+    </a>
+
+    <div class="steps">
+      <p class="steps-title">Как установить</p>
+      <ol>
+        <li><b>Android / Chrome:</b> после открытия нажми «Install app» в шапке, или меню (⋮) → «Установить приложение» / «Добавить на главный экран».</li>
+        <li><b>iPhone / Safari:</b> кнопка «Поделиться» (квадрат со стрелкой) → «На экран «Домой»».</li>
+        <li><b>Windows / Mac (Chrome, Edge):</b> значок ⊕ справа в адресной строке → «Установить».</li>
+      </ol>
+    </div>
+
+    <p class="link-fallback">Или скопируй ссылку: <a href="https://skymaverick171.github.io/letter-dispatcher/">skymaverick171.github.io/letter-dispatcher</a></p>
+  </div>
+  <footer>Letter Dispatcher</footer>
+</body>
+</html>
