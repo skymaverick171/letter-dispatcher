@@ -948,6 +948,7 @@
               <button type="button" class="btn ghost" data-mail-client="outlook" data-i18n="mailClientOutlook">Outlook (desktop)</button>
               <button type="button" class="btn ghost" data-mail-client="spark" data-i18n="mailClientSpark">Spark</button>
               <button type="button" class="btn ghost" data-mail-client="airmail" data-i18n="mailClientAirmail">Airmail</button>
+              <p class="hint" data-i18n="mailClientOutlookHint" style="margin:4px 2px 0;">"Outlook (desktop)" only works if Outlook is set as your device's default mail app — otherwise it opens whatever app actually is the default.</p>
             </div>
           </div>
         </div>
@@ -1337,6 +1338,7 @@
       mailClientOutlook: "Outlook (desktop)",
       mailClientSpark: "Spark",
       mailClientAirmail: "Airmail",
+      mailClientOutlookHint: "\"Outlook (desktop)\" only works if Outlook is set as your device's default mail app — otherwise it opens whatever app actually is the default.",
       fieldAttachments: "Attachments (optional)",
       attachAddBtn: "Add files",
       attachEmptyHint: "No files selected.",
@@ -1498,6 +1500,7 @@
       mailClientOutlook: "Outlook (bureau)",
       mailClientSpark: "Spark",
       mailClientAirmail: "Airmail",
+      mailClientOutlookHint: "« Outlook (bureau) » ne fonctionne que si Outlook est défini comme application de messagerie par défaut sur votre appareil — sinon, c'est l'application réellement par défaut qui s'ouvre.",
       fieldAttachments: "Pièces jointes (facultatif)",
       attachAddBtn: "Ajouter des fichiers",
       attachEmptyHint: "Aucun fichier sélectionné.",
@@ -3473,9 +3476,17 @@
   function buildMailAppUrl(client, to, subject, body, cc, bcc) {
     var enc = encodeURIComponent;
     var url;
-    if (client === "outlook") {
-      url = "ms-outlook://compose?to=" + to + "&subject=" + enc(subject) + "&body=" + enc(body);
-    } else if (client === "spark") {
+    // "outlook" intentionally falls through to the plain mailto: branch
+    // below, same as "default". ms-outlook://compose looks like it should
+    // be desktop Outlook's own deep link, but it's actually the Outlook
+    // Mobile (iOS/Android) app's scheme — on Windows and Mac desktop,
+    // Outlook (classic, new Outlook, or Mac) has no compose URL scheme of
+    // its own, so it opens (if at all) without picking up to/subject/body.
+    // The only way a web page can hand off prefilled content to desktop
+    // Outlook is the standard mailto: link, and only once Outlook is set as
+    // the OS's default mail app (Windows: Settings > Apps > Default apps >
+    // Mail; Mac: Mail.app's own default-app setting).
+    if (client === "spark") {
       url = "readdle-spark://compose?recipient=" + to + "&subject=" + enc(subject) + "&body=" + enc(body);
     } else if (client === "airmail") {
       url = "airmail://compose?to=" + to + "&subject=" + enc(subject) + "&plainBody=" + enc(body);
