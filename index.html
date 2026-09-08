@@ -729,6 +729,8 @@
     white-space: pre-line;
   }
   .install-help-card .btn { width: 100%; justify-content: center; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-actions .btn { flex: 1; width: auto; }
 
   @media (max-width: 640px) {
     .grid2 { grid-template-columns: 1fr; }
@@ -1141,6 +1143,17 @@
   </div>
 </div>
 
+<div class="install-help-overlay" id="confirmOverlay" hidden>
+  <div class="install-help-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitleEl">
+    <h3 id="confirmTitleEl"></h3>
+    <p id="confirmText"></p>
+    <div class="confirm-actions">
+      <button type="button" class="btn primary" id="confirmSaveBtn"></button>
+      <button type="button" class="btn ghost" id="confirmDiscardBtn"></button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   var state = {
@@ -1291,6 +1304,15 @@
       pasteRowsWarn: "Paste rows to import.",
       importedMsg: "Contacts added: {n}.",
       importFailedMsg: "Couldn't recognize any rows in the form \"Name, Email\".",
+      confirmUnsavedTitle: "Unsaved changes",
+      confirmUnsavedContactText: "This contact hasn't been saved yet. Save your changes before closing?",
+      confirmUnsavedLetterText: "This letter hasn't been saved yet. Save your changes before closing?",
+      confirmSaveBtn: "Save changes",
+      confirmDiscardBtn: "Discard",
+      confirmImportTitle: "Import from Google Sheets",
+      confirmImportText: "Add {n} contact(s) found in the pasted/uploaded data?",
+      confirmImportKeepBtn: "Save changes",
+      confirmImportCancelBtn: "Cancel",
       copyPanelTitle: "Copy and paste into Google Sheets",
       copyPanelHint: "The text was copied to your clipboard (if your browser allowed it) — just paste (Ctrl/Cmd+V) into cell A1 of your Google Sheet, columns will split automatically. If copying didn't work, select the text above manually.",
       newLetterTitle: "New letter",
@@ -1434,6 +1456,15 @@
       pasteRowsWarn: "Collez des lignes à importer.",
       importedMsg: "Contacts ajoutés : {n}.",
       importFailedMsg: "Aucune ligne du type « Nom, Email » n'a été reconnue.",
+      confirmUnsavedTitle: "Modifications non enregistrées",
+      confirmUnsavedContactText: "Ce contact n'a pas encore été enregistré. Enregistrer vos modifications avant de fermer ?",
+      confirmUnsavedLetterText: "Cette lettre n'a pas encore été enregistrée. Enregistrer vos modifications avant de fermer ?",
+      confirmSaveBtn: "Enregistrer",
+      confirmDiscardBtn: "Ignorer",
+      confirmImportTitle: "Importer depuis Google Sheets",
+      confirmImportText: "Ajouter {n} contact(s) trouvé(s) dans les données collées/importées ?",
+      confirmImportKeepBtn: "Enregistrer",
+      confirmImportCancelBtn: "Annuler",
       copyPanelTitle: "Copiez et collez dans Google Sheets",
       copyPanelHint: "Le texte a été copié dans le presse-papiers (si le navigateur l'a autorisé) — collez-le (Ctrl/Cmd+V) dans la cellule A1 de votre Google Sheet, les colonnes se répartiront automatiquement. Si la copie n'a pas fonctionné, sélectionnez le texte ci-dessus manuellement.",
       newLetterTitle: "Nouvelle lettre",
@@ -1545,6 +1576,40 @@
   });
 
   // ---------- storage layer ----------
+  // Outside a Claude Artifact (window.claude.use unavailable — e.g. this app
+  // deployed standalone on GitHub Pages) there is no cloud "db" to fall back
+  // to, so goLocal() below needs its own real persistence or every reload
+  // would wipe the address book back to the two example rows. localStorage
+  // (already used for the language preference, see mailDispatcherLang above)
+  // is that persistence: one JSON array per key, read once at startup and
+  // rewritten after every local mutation.
+  var LS_KEYS = {
+    contacts: "letterDispatcher.contacts",
+    letters: "letterDispatcher.letters",
+    groupColors: "letterDispatcher.groupColors",
+  };
+  function lsLoad(key, seed) {
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (raw === null) {
+      // Key has never been written — this is a first-ever run on this
+      // device/browser, so seed with the example data and persist it
+      // immediately. Once saved, an intentionally emptied list (raw === "[]")
+      // is respected instead of being re-seeded.
+      var copy = seed.slice();
+      lsSave(key, copy);
+      return copy;
+    }
+    try {
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : seed.slice();
+    } catch (e) {
+      return seed.slice();
+    }
+  }
+  function lsSave(key, arr) {
+    try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
+  }
   function initStorage() {
     if (!window.claude || !window.claude.use) {
       goLocal();
@@ -1577,8 +1642,9 @@
     state.dbc = null;
     state.dbl = null;
     state.dbg = null;
-    if (!state.contacts.length) state.contacts = LOCAL_CONTACTS.slice();
-    if (!state.letters.length) state.letters = LOCAL_LETTERS.slice();
+    state.contacts = lsLoad(LS_KEYS.contacts, LOCAL_CONTACTS);
+    state.letters = lsLoad(LS_KEYS.letters, LOCAL_LETTERS);
+    state.groupColorDocs = lsLoad(LS_KEYS.groupColors, []);
     renderContacts();
     renderLetters();
   }
@@ -1596,6 +1662,7 @@
       data.id = "local-" + Date.now();
       state.contacts.push(data);
     }
+    lsSave(LS_KEYS.contacts, state.contacts);
     renderContacts();
     return Promise.resolve();
   }
@@ -1603,6 +1670,7 @@
     if (id === state.editingContactId) resetContactForm();
     if (state.dbc) return state.dbc.doc(id).delete();
     state.contacts = state.contacts.filter(function (c) { return c.id !== id; });
+    lsSave(LS_KEYS.contacts, state.contacts);
     renderContacts();
     return Promise.resolve();
   }
@@ -1619,12 +1687,14 @@
       data.id = "local-" + Date.now();
       state.letters.push(data);
     }
+    lsSave(LS_KEYS.letters, state.letters);
     renderLetters();
     return Promise.resolve();
   }
   function deleteLetter(id) {
     if (state.dbl) return state.dbl.doc(id).delete();
     state.letters = state.letters.filter(function (l) { return l.id !== id; });
+    lsSave(LS_KEYS.letters, state.letters);
     renderLetters();
     return Promise.resolve();
   }
@@ -1653,6 +1723,7 @@
     } else {
       state.groupColorDocs.push({ id: "local-" + Date.now(), group: group, color: colorKey });
     }
+    lsSave(LS_KEYS.groupColors, state.groupColorDocs);
     renderContacts();
     return Promise.resolve();
   }
@@ -1661,6 +1732,7 @@
     if (!existing) return Promise.resolve();
     if (state.dbg) return state.dbg.doc(existing.id).delete();
     state.groupColorDocs = state.groupColorDocs.filter(function (d) { return d.id !== existing.id; });
+    lsSave(LS_KEYS.groupColors, state.groupColorDocs);
     renderContacts();
     return Promise.resolve();
   }
@@ -1911,6 +1983,7 @@
     $("#contactFormTitle").textContent = t("editContactTitle");
     $("#cancelContactEdit").hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
+    state.contactFormBaseline = currentContactFormValues();
   }
 
   function resetContactForm() {
@@ -1921,6 +1994,25 @@
     $("#newContactGroup").value = "";
     $("#contactFormTitle").textContent = t("newContactTitle");
     $("#cancelContactEdit").hidden = true;
+    state.contactFormBaseline = currentContactFormValues();
+  }
+
+  // Snapshot of the contact form's fields, used to tell a genuinely blank
+  // (or unchanged-since-loaded) form from one with in-progress edits, so
+  // the "unsaved changes" popup only appears when there's something to lose.
+  function currentContactFormValues() {
+    return {
+      name: $("#newContactName").value,
+      email: $("#newContactEmail").value,
+      office: $("#newContactOffice").value,
+      group: $("#newContactGroup").value
+    };
+  }
+  function contactFormHasUnsavedChanges() {
+    var cur = currentContactFormValues();
+    var base = state.contactFormBaseline || { name: "", email: "", office: "", group: "" };
+    return cur.name !== base.name || cur.email !== base.email ||
+      cur.office !== base.office || cur.group !== base.group;
   }
 
   // Generic recipient checklist renderer shared by the Letters-tab editor
@@ -2363,33 +2455,59 @@
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   });
 
-  function importRows(rows) {
-    if (!rows.length) return 0;
+  // Splits parsing from committing: parseImportRows only figures out which
+  // rows are usable (dropping the header row and anything without a valid
+  // name+email), and commitImportedRows is the only part that actually
+  // writes to state/localStorage. This lets the paste/CSV handlers show the
+  // person a "save these N contacts?" popup before anything is persisted,
+  // instead of importing silently and only reporting the result after.
+  function parseImportRows(rows) {
+    if (!rows.length) return [];
     var first = (rows[0][0] || "").toLowerCase();
     if (first.indexOf("им") !== -1 || first.indexOf("name") !== -1 || first.indexOf("nom") !== -1) rows = rows.slice(1);
-    var added = 0;
+    var out = [];
     rows.forEach(function (r) {
       var name = (r[0] || "").trim();
       var email = (r[1] || "").trim();
       var office = (r[2] || "").trim();
       var group = (r[3] || "").trim();
       if (name && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        saveContact(null, { name: name, email: email, office: office, group: group });
-        added++;
+        out.push({ name: name, email: email, office: office, group: group });
       }
     });
-    return added;
+    return out;
+  }
+  function commitImportedRows(entries) {
+    entries.forEach(function (entry) { saveContact(null, entry); });
+    return entries.length;
+  }
+  function confirmAndImport(entries, msgEl, onDone) {
+    if (!entries.length) {
+      msgEl.innerHTML = '<div class="status-msg warn">' + esc(t("importFailedMsg")) + '</div>';
+      return;
+    }
+    showConfirmModal({
+      title: t("confirmImportTitle"),
+      text: tn("confirmImportText", entries.length),
+      saveLabel: t("confirmImportKeepBtn"),
+      discardLabel: t("confirmImportCancelBtn")
+    }).then(function (shouldImport) {
+      if (!shouldImport) return;
+      var added = commitImportedRows(entries);
+      msgEl.innerHTML = added
+        ? '<div class="status-msg">' + esc(tn("importedMsg", added)) + '</div>'
+        : '<div class="status-msg warn">' + esc(t("importFailedMsg")) + '</div>';
+      if (onDone) onDone();
+    });
   }
 
   $("#importPasteBtn").addEventListener("click", function () {
     var text = $("#importArea").value.trim();
     var msg = $("#importMsg");
     if (!text) { msg.innerHTML = '<div class="status-msg warn">' + esc(t("pasteRowsWarn")) + '</div>'; return; }
-    var added = importRows(parseDelimited(text));
-    msg.innerHTML = added
-      ? '<div class="status-msg">' + esc(tn("importedMsg", added)) + '</div>'
-      : '<div class="status-msg warn">' + esc(t("importFailedMsg")) + '</div>';
-    $("#importArea").value = "";
+    confirmAndImport(parseImportRows(parseDelimited(text)), msg, function () {
+      $("#importArea").value = "";
+    });
   });
 
   $("#importFile").addEventListener("change", function (e) {
@@ -2397,10 +2515,7 @@
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function () {
-      var added = importRows(parseDelimited(String(reader.result)));
-      $("#importMsg").innerHTML = added
-        ? '<div class="status-msg">' + esc(tn("importedMsg", added)) + '</div>'
-        : '<div class="status-msg warn">' + esc(t("importFailedMsg")) + '</div>';
+      confirmAndImport(parseImportRows(parseDelimited(String(reader.result))), $("#importMsg"));
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -2420,7 +2535,18 @@
     resetContactForm();
     msg.innerHTML = '';
   });
-  $("#cancelContactEdit").addEventListener("click", resetContactForm);
+  $("#cancelContactEdit").addEventListener("click", function () {
+    if (!contactFormHasUnsavedChanges()) { resetContactForm(); return; }
+    showConfirmModal({
+      title: t("confirmUnsavedTitle"),
+      text: t("confirmUnsavedContactText"),
+      saveLabel: t("confirmSaveBtn"),
+      discardLabel: t("confirmDiscardBtn")
+    }).then(function (shouldSave) {
+      if (shouldSave) $("#addContactBtn").click();
+      else resetContactForm();
+    });
+  });
   $("#letterContactFilter").addEventListener("input", renderLetterRecipientChecklist);
   $("#groupFilter").addEventListener("change", renderContacts);
 
@@ -2557,6 +2683,30 @@
     $("#letterContactFilter").value = "";
     setTplRecipientsOpen(false);
     renderLetterRecipientChecklist();
+    state.letterFormBaseline = currentLetterFormValues();
+  }
+
+  // Snapshot of the letter form's fields (see currentContactFormValues for
+  // why), including the recipient-checkbox selection.
+  function currentLetterFormValues() {
+    return {
+      subject: $("#newLetterSubject").value,
+      body: $("#newLetterBody").value,
+      extraEmails: $("#letterExtraEmails").value,
+      cc: $("#letterCc").value,
+      bcc: $("#letterBcc").value,
+      personalize: $("#letterPersonalize").checked,
+      recipients: state.letterRecipientIds.slice().sort().join(",")
+    };
+  }
+  function letterFormHasUnsavedChanges() {
+    var cur = currentLetterFormValues();
+    var base = state.letterFormBaseline || {
+      subject: "", body: "", extraEmails: "", cc: "", bcc: "", personalize: true, recipients: ""
+    };
+    return cur.subject !== base.subject || cur.body !== base.body ||
+      cur.extraEmails !== base.extraEmails || cur.cc !== base.cc || cur.bcc !== base.bcc ||
+      cur.personalize !== base.personalize || cur.recipients !== base.recipients;
   }
 
   // ---------- quick-edit numbers, name placeholder & custom chips ----------
@@ -2770,7 +2920,18 @@
     resetLetterForm();
     msg.innerHTML = '';
   });
-  $("#cancelLetterEdit").addEventListener("click", resetLetterForm);
+  $("#cancelLetterEdit").addEventListener("click", function () {
+    if (!letterFormHasUnsavedChanges()) { resetLetterForm(); return; }
+    showConfirmModal({
+      title: t("confirmUnsavedTitle"),
+      text: t("confirmUnsavedLetterText"),
+      saveLabel: t("confirmSaveBtn"),
+      discardLabel: t("confirmDiscardBtn")
+    }).then(function (shouldSave) {
+      if (shouldSave) $("#saveLetterBtn").click();
+      else resetLetterForm();
+    });
+  });
   function resetLetterForm() {
     state.editingLetterId = null;
     state.letterRecipientIds = [];
@@ -2786,6 +2947,7 @@
     $("#letterContactFilter").value = "";
     setTplRecipientsOpen(false);
     renderLetterRecipientChecklist();
+    state.letterFormBaseline = currentLetterFormValues();
   }
 
   // ---------- compose ----------
@@ -3120,6 +3282,42 @@
     if (overlay) overlay.addEventListener("click", function (e) { if (e.target === overlay) closeInstallHelp(); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeInstallHelp(); });
   })();
+
+  // ---------- generic save-changes confirmation popup ----------
+  // Used both when closing a form/modal that has unsaved edits (New/Edit
+  // contact, New/Edit letter) and after parsing rows from "Import from
+  // Google Sheets" — in both cases we ask before the change is committed
+  // or discarded, rather than silently doing either. Resolves true when
+  // the person picks the affirmative ("Save changes") button, false for
+  // the dismissive one (or Escape / click on the backdrop).
+  function showConfirmModal(opts) {
+    return new Promise(function (resolve) {
+      var overlay = $("#confirmOverlay");
+      var saveBtn = $("#confirmSaveBtn");
+      var discardBtn = $("#confirmDiscardBtn");
+      $("#confirmTitleEl").textContent = opts.title;
+      $("#confirmText").textContent = opts.text;
+      saveBtn.textContent = opts.saveLabel;
+      discardBtn.textContent = opts.discardLabel;
+      overlay.hidden = false;
+      function cleanup(result) {
+        overlay.hidden = true;
+        saveBtn.removeEventListener("click", onSave);
+        discardBtn.removeEventListener("click", onDiscard);
+        overlay.removeEventListener("click", onOverlay);
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+      function onSave() { cleanup(true); }
+      function onDiscard() { cleanup(false); }
+      function onOverlay(e) { if (e.target === overlay) cleanup(false); }
+      function onKey(e) { if (e.key === "Escape") cleanup(false); }
+      saveBtn.addEventListener("click", onSave);
+      discardBtn.addEventListener("click", onDiscard);
+      overlay.addEventListener("click", onOverlay);
+      document.addEventListener("keydown", onKey);
+    });
+  }
   (function () {
     var installBtn = $("#installAppBtn");
     var deferredInstallPrompt = null;
