@@ -1118,6 +1118,21 @@
         <ul class="list" id="letterList"></ul>
       </div>
     </div>
+
+    <div class="panel">
+      <div class="panel-head"><h2 data-i18n="importLettersTitle">Import from Google Sheets</h2></div>
+      <div class="panel-body">
+        <p class="hint" style="margin:0 0 10px;" data-i18n="importLettersHint">Use columns Subject, Body, Cc, Bcc, Personalize (yes/no) in your Google Sheet, copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV). Recipients aren't included — pick them per letter after importing.</p>
+        <textarea id="importLetterArea" rows="4" placeholder="Payment reminder&#9;Hello, {{name}}!&#9;&#9;&#9;yes" data-i18n-ph="importLettersPastePlaceholder"></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary" id="importLetterPasteBtn" data-i18n="importPasteBtn">Import pasted rows</button>
+          <label class="btn" for="importLetterFile" style="cursor:pointer;" data-i18n="chooseCsvBtn">Choose CSV file…</label>
+          <input type="file" id="importLetterFile" accept=".csv,text/csv" hidden>
+        </div>
+        <div id="importLetterMsg"></div>
+      </div>
+    </div>
+
     <div class="panel">
       <div class="panel-head"><h2 data-i18n="installPanelTitle">Install as an app</h2></div>
       <div class="panel-body" style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
@@ -1315,6 +1330,12 @@
       confirmImportCancelBtn: "Cancel",
       copyPanelTitle: "Copy and paste into Google Sheets",
       copyPanelHint: "The text was copied to your clipboard (if your browser allowed it) — just paste (Ctrl/Cmd+V) into cell A1 of your Google Sheet, columns will split automatically. If copying didn't work, select the text above manually.",
+      importLettersTitle: "Import from Google Sheets",
+      importLettersHint: "Use columns Subject, Body, Cc, Bcc, Personalize (yes/no) in your Google Sheet, copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV). Recipients aren't included — pick them per letter after importing.",
+      importLettersPastePlaceholder: "Payment reminder\tHello, {{name}}!\t\t\tyes",
+      importedLettersMsg: "Letters added: {n}.",
+      importFailedLettersMsg: "Couldn't recognize any rows in the form \"Subject, Body\".",
+      confirmImportLettersText: "Add {n} letter(s) found in the pasted/uploaded data?",
       newLetterTitle: "New letter",
       editLetterTitle: "Editing letter",
       fieldLetterSubject: "Subject",
@@ -1467,6 +1488,12 @@
       confirmImportCancelBtn: "Annuler",
       copyPanelTitle: "Copiez et collez dans Google Sheets",
       copyPanelHint: "Le texte a été copié dans le presse-papiers (si le navigateur l'a autorisé) — collez-le (Ctrl/Cmd+V) dans la cellule A1 de votre Google Sheet, les colonnes se répartiront automatiquement. Si la copie n'a pas fonctionné, sélectionnez le texte ci-dessus manuellement.",
+      importLettersTitle: "Importer depuis Google Sheets",
+      importLettersHint: "Utilisez les colonnes Subject, Body, Cc, Bcc, Personalize (yes/no) dans votre Google Sheet, copiez (Ctrl/Cmd+C) et collez ici — ou importez un fichier CSV exporté depuis la feuille (Fichier → Télécharger → CSV). Les destinataires ne sont pas inclus — choisissez-les pour chaque lettre après l'import.",
+      importLettersPastePlaceholder: "Rappel de paiement\tBonjour, {{name}} !\t\t\tyes",
+      importedLettersMsg: "Lettres ajoutées : {n}.",
+      importFailedLettersMsg: "Aucune ligne du type « Subject, Body » n'a été reconnue.",
+      confirmImportLettersText: "Ajouter {n} lettre(s) trouvée(s) dans les données collées/importées ?",
       newLetterTitle: "Nouvelle lettre",
       editLetterTitle: "Modification de la lettre",
       fieldLetterSubject: "Objet",
@@ -1610,6 +1637,17 @@
   function lsSave(key, arr) {
     try { localStorage.setItem(key, JSON.stringify(arr)); } catch (e) {}
   }
+  // Date.now() alone collides when several local-path records are created
+  // in the same millisecond — e.g. a bulk "Import from Google Sheets" paste,
+  // which calls saveContact/saveLetter once per row in a tight synchronous
+  // loop. A trailing counter keeps every id unique within the session
+  // regardless of how fast the loop runs, while staying backward-compatible
+  // with existing "local-<timestamp>" ids already saved.
+  var localIdCounter = 0;
+  function genLocalId() {
+    localIdCounter++;
+    return "local-" + Date.now() + "-" + localIdCounter;
+  }
   function initStorage() {
     if (!window.claude || !window.claude.use) {
       goLocal();
@@ -1659,7 +1697,7 @@
       var c = state.contacts.find(function (x) { return x.id === id; });
       if (c) Object.assign(c, data);
     } else {
-      data.id = "local-" + Date.now();
+      data.id = genLocalId();
       state.contacts.push(data);
     }
     lsSave(LS_KEYS.contacts, state.contacts);
@@ -1684,7 +1722,7 @@
       var l = state.letters.find(function (x) { return x.id === id; });
       if (l) Object.assign(l, data);
     } else {
-      data.id = "local-" + Date.now();
+      data.id = genLocalId();
       state.letters.push(data);
     }
     lsSave(LS_KEYS.letters, state.letters);
@@ -1721,7 +1759,7 @@
     if (existing) {
       existing.color = colorKey;
     } else {
-      state.groupColorDocs.push({ id: "local-" + Date.now(), group: group, color: colorKey });
+      state.groupColorDocs.push({ id: genLocalId(), group: group, color: colorKey });
     }
     lsSave(LS_KEYS.groupColors, state.groupColorDocs);
     renderContacts();
@@ -2516,6 +2554,73 @@
     var reader = new FileReader();
     reader.onload = function () {
       confirmAndImport(parseImportRows(parseDelimited(String(reader.result))), $("#importMsg"));
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  // ---------- import letters from Google Sheets (mirrors the contacts
+  // import above: parse first, ask for confirmation with a row count, only
+  // write to localStorage once confirmed). Recipients aren't part of the
+  // imported columns — a letter template is reusable across many recipient
+  // sets, so that stays a per-send choice made in the app after import.
+  function parseImportLetterRows(rows) {
+    if (!rows.length) return [];
+    var first = (rows[0][0] || "").toLowerCase();
+    if (first.indexOf("subject") !== -1 || first.indexOf("тема") !== -1 || first.indexOf("objet") !== -1) rows = rows.slice(1);
+    var out = [];
+    rows.forEach(function (r) {
+      var subject = (r[0] || "").trim();
+      var body = (r[1] || "").trim();
+      var cc = (r[2] || "").trim();
+      var bcc = (r[3] || "").trim();
+      var personalizeRaw = (r[4] || "").trim().toLowerCase();
+      var personalize = ["no", "non", "false", "0", "нет"].indexOf(personalizeRaw) === -1;
+      if (subject && body) {
+        out.push({ subject: subject, body: body, cc: cc, bcc: bcc, personalize: personalize, extraEmails: "", toContactIds: [] });
+      }
+    });
+    return out;
+  }
+  function commitImportedLetterRows(entries) {
+    entries.forEach(function (entry) { saveLetter(null, entry); });
+    return entries.length;
+  }
+  function confirmAndImportLetters(entries, msgEl, onDone) {
+    if (!entries.length) {
+      msgEl.innerHTML = '<div class="status-msg warn">' + esc(t("importFailedLettersMsg")) + '</div>';
+      return;
+    }
+    showConfirmModal({
+      title: t("confirmImportTitle"),
+      text: tn("confirmImportLettersText", entries.length),
+      saveLabel: t("confirmImportKeepBtn"),
+      discardLabel: t("confirmImportCancelBtn")
+    }).then(function (shouldImport) {
+      if (!shouldImport) return;
+      var added = commitImportedLetterRows(entries);
+      msgEl.innerHTML = added
+        ? '<div class="status-msg">' + esc(tn("importedLettersMsg", added)) + '</div>'
+        : '<div class="status-msg warn">' + esc(t("importFailedLettersMsg")) + '</div>';
+      if (onDone) onDone();
+    });
+  }
+
+  $("#importLetterPasteBtn").addEventListener("click", function () {
+    var text = $("#importLetterArea").value.trim();
+    var msg = $("#importLetterMsg");
+    if (!text) { msg.innerHTML = '<div class="status-msg warn">' + esc(t("pasteRowsWarn")) + '</div>'; return; }
+    confirmAndImportLetters(parseImportLetterRows(parseDelimited(text)), msg, function () {
+      $("#importLetterArea").value = "";
+    });
+  });
+
+  $("#importLetterFile").addEventListener("change", function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      confirmAndImportLetters(parseImportLetterRows(parseDelimited(String(reader.result))), $("#importLetterMsg"));
     };
     reader.readAsText(file);
     e.target.value = "";
