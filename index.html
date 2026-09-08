@@ -1157,7 +1157,13 @@
       </div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h2 data-i18n="readyLettersTitle">Ready-made letters</h2></div>
+      <div class="panel-head">
+        <h2 data-i18n="readyLettersTitle">Ready-made letters</h2>
+        <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap;">
+          <button class="btn" id="showCopyLettersBtn" data-i18n="copyForSheetsBtn">Copy for Google Sheets</button>
+          <button class="btn" id="downloadLettersCsvBtn" data-i18n="downloadCsvBtn">Download CSV</button>
+        </div>
+      </div>
       <div class="panel-body">
         <ul class="list" id="letterList"></ul>
       </div>
@@ -1174,6 +1180,14 @@
           <input type="file" id="importLetterFile" accept=".csv,text/csv" hidden>
         </div>
         <div id="importLetterMsg"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="copyLetterPanel" hidden>
+      <div class="panel-head"><h2 data-i18n="copyPanelTitle">Copy and paste into Google Sheets</h2></div>
+      <div class="panel-body">
+        <textarea id="copyLetterArea" rows="6" readonly></textarea>
+        <p class="hint" data-i18n="copyPanelHint">The text was copied to your clipboard (if your browser allowed it) — just paste (Ctrl/Cmd+V) into cell A1 of your Google Sheet, columns will split automatically. If copying didn't work, select the text above manually.</p>
       </div>
     </div>
 
@@ -2594,6 +2608,22 @@
     if (sep === "\t") return rows.map(function (r) { return r.join("\t"); }).join("\n");
     return rows.map(function (r) { return r.map(csvEscape).join(","); }).join("\r\n");
   }
+  // Same column order as the Letters Google Sheets template (Subject, Body,
+  // Cc, Bcc, Personalize) so a downloaded/copied file round-trips cleanly
+  // back through "Import from Google Sheets". Personalize is written as
+  // "yes"/"no" text, matching what parseImportLetterRows expects on the way
+  // back in. Recipients are intentionally not a column here either (see the
+  // note on the Letters import panel) — a letter is reused across different
+  // recipient sets, picked per-send in the app.
+  function lettersToDelimited(sep) {
+    var rows = [["Subject", "Body", "Cc", "Bcc", "Personalize"]].concat(
+      state.letters.map(function (l) {
+        return [l.subject, l.body, l.cc || "", l.bcc || "", l.personalize === false ? "no" : "yes"];
+      })
+    );
+    if (sep === "\t") return rows.map(function (r) { return r.join("\t"); }).join("\n");
+    return rows.map(function (r) { return r.map(csvEscape).join(","); }).join("\r\n");
+  }
   function parseDelimited(text) {
     var sep = text.indexOf("\t") !== -1 ? "\t" : ",";
     var lines = text.split(/\r\n|\n|\r/).filter(function (l) { return l.trim() !== ""; });
@@ -2632,6 +2662,27 @@
     var tsv = contactsToDelimited("\t");
     $("#copyArea").value = tsv;
     $("#copyPanel").hidden = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(tsv).catch(function () {});
+    }
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  });
+
+  $("#downloadLettersCsvBtn").addEventListener("click", function () {
+    var csv = lettersToDelimited(",");
+    if (!downloadsNS) {
+      $("#copyLetterArea").value = lettersToDelimited("\t");
+      $("#copyLetterPanel").hidden = false;
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      return;
+    }
+    downloadsNS.save({ filename: "letters.csv", data: csv }).catch(function () {});
+  });
+
+  $("#showCopyLettersBtn").addEventListener("click", function () {
+    var tsv = lettersToDelimited("\t");
+    $("#copyLetterArea").value = tsv;
+    $("#copyLetterPanel").hidden = false;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(tsv).catch(function () {});
     }
