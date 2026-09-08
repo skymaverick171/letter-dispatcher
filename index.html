@@ -354,14 +354,58 @@
   }
   .group-color-row { margin-bottom: 10px; }
   .group-color-row:last-child { margin-bottom: 0; }
+  .group-color-name-row { display: flex; align-items: center; gap: 4px; margin-bottom: 5px; }
   .group-color-row .group-color-name {
     font-size: 13px;
     font-weight: 500;
-    margin-bottom: 5px;
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .group-rename-btn {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    line-height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .group-rename-btn:hover, .group-rename-btn:focus-visible { color: var(--ink); background: var(--surface-2); }
+  .group-rename-input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 13px;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .group-rename-save, .group-rename-cancel {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    line-height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .group-rename-save { color: var(--good); }
+  .group-rename-cancel { color: var(--muted); }
+  .group-rename-save:hover, .group-rename-save:focus-visible,
+  .group-rename-cancel:hover, .group-rename-cancel:focus-visible { background: var(--surface-2); }
   .group-color-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
   .color-swatch {
     width: 20px;
@@ -1187,6 +1231,7 @@
     composeLetterId: null,
     composeAttachments: [],
     groupColorDocs: [],
+    groupRenameTarget: null,
     dbc: null,
     dbl: null,
     dbg: null,
@@ -1210,6 +1255,24 @@
     { key: "brown", label: "colorBrown" },
     { key: "gray", label: "colorGray" },
   ];
+  // The Google Sheets Contacts template ships eight preset Group names,
+  // each with its own baked-in row color (see GROUP_COLORS in
+  // docs/google-sheets-template/build.py) — chosen to match one of this
+  // app's own hues exactly. When a spreadsheet import brings in a contact
+  // tagged with one of these names, apply that same hue here automatically
+  // (see commitImportedRows) so the row is correctly colored right away,
+  // without a manual trip to "Group colors" — but only if the group has no
+  // color assigned yet, so a color chosen deliberately is never overwritten.
+  var PRESET_GROUP_COLORS = {
+    "Sales": "blue",
+    "Support": "green",
+    "Marketing": "purple",
+    "VIP": "yellow",
+    "Partners": "teal",
+    "Leads": "pink",
+    "Vendors": "orange",
+    "Internal": "gray",
+  };
 
   var I18N = {
     en: {
@@ -1297,6 +1360,9 @@
       groupColorsBtn: "🎨 Group colors",
       groupColorsTitle: "Group colors",
       groupColorsEmptyMsg: "Add a Group to a contact first, then it will show up here.",
+      renameGroupBtn: "Rename group",
+      renameGroupSaveBtn: "Save name",
+      renameGroupCancelBtn: "Cancel",
       noColorLabel: "No color",
       colorRed: "Red",
       colorOrange: "Orange",
@@ -1455,6 +1521,9 @@
       groupColorsBtn: "🎨 Couleurs des groupes",
       groupColorsTitle: "Couleurs des groupes",
       groupColorsEmptyMsg: "Ajoutez d'abord un groupe à un contact ; il apparaîtra ensuite ici.",
+      renameGroupBtn: "Renommer le groupe",
+      renameGroupSaveBtn: "Enregistrer le nom",
+      renameGroupCancelBtn: "Annuler",
       noColorLabel: "Aucune couleur",
       colorRed: "Rouge",
       colorOrange: "Orange",
@@ -1774,6 +1843,33 @@
     renderContacts();
     return Promise.resolve();
   }
+  // Renames a group in one step: updates the Group field on every contact
+  // that currently has oldName, and carries the group's assigned color (if
+  // any) over to newName. Reuses saveContact/setGroupColor/clearGroupColor
+  // so it works the same over both the cloud (Firestore) and local
+  // (localStorage) storage paths. Merging into an existing group (newName
+  // already used by other contacts) is allowed — that group's own color,
+  // if it has one, is kept as-is rather than overwritten.
+  function renameGroup(oldName, newNameRaw) {
+    var newName = (newNameRaw || "").trim();
+    if (!newName || newName === oldName) return Promise.resolve(false);
+    var matches = state.contacts.filter(function (c) { return (c.group || "").trim() === oldName; });
+    if (!matches.length) return Promise.resolve(false);
+    var renames = Promise.all(matches.map(function (c) { return saveContact(c.id, { group: newName }); }));
+    var oldColor = groupColorKey(oldName);
+    var newHasColor = !!groupColorKey(newName);
+    var colorMove = Promise.resolve();
+    if (oldColor && !newHasColor) {
+      colorMove = setGroupColor(newName, oldColor).then(function () { return clearGroupColor(oldName); });
+    } else if (oldColor) {
+      colorMove = clearGroupColor(oldName);
+    }
+    return Promise.all([renames, colorMove]).then(function () {
+      renderContacts();
+      renderGroupColorsPopover();
+      return true;
+    });
+  }
   // Builds the inline style attribute for a group's tag/badge, using the
   // soft --grp-* CSS variable pair (theme-aware, same color-mix pattern as
   // the custom text chips) so an assigned color reads well in light and
@@ -1794,8 +1890,15 @@
     if (!box) return;
     var groups = contactGroups();
     if (!groups.length) {
+      state.groupRenameTarget = null;
       box.innerHTML = '<div class="group-colors-empty">' + esc(t("groupColorsEmptyMsg")) + '</div>';
       return;
+    }
+    // A rename that empties/merges the group away can make the previous
+    // edit target vanish from the list — drop it rather than getting stuck
+    // "editing" a group that's no longer there.
+    if (state.groupRenameTarget && groups.indexOf(state.groupRenameTarget) === -1) {
+      state.groupRenameTarget = null;
     }
     box.innerHTML = groups.map(function (g) {
       var current = groupColorKey(g);
@@ -1806,12 +1909,54 @@
       }).join("");
       var noneSel = current ? "" : " selected";
       swatches += '<button type="button" class="color-swatch-none' + noneSel + '" data-group="' + esc(g) + '" data-color="" title="' + esc(t("noColorLabel")) + '" aria-label="' + esc(t("noColorLabel")) + '">✕</button>';
-      return '<div class="group-color-row"><div class="group-color-name">' + esc(g) + '</div><div class="group-color-swatches">' + swatches + '</div></div>';
+      var nameRow = state.groupRenameTarget === g
+        ? '<div class="group-color-name-row">' +
+          '<input type="text" class="group-rename-input" value="' + esc(g) + '" data-group="' + esc(g) + '">' +
+          '<button type="button" class="group-rename-save" title="' + esc(t("renameGroupSaveBtn")) + '" aria-label="' + esc(t("renameGroupSaveBtn")) + '">✓</button>' +
+          '<button type="button" class="group-rename-cancel" title="' + esc(t("renameGroupCancelBtn")) + '" aria-label="' + esc(t("renameGroupCancelBtn")) + '">✕</button>' +
+          '</div>'
+        : '<div class="group-color-name-row">' +
+          '<div class="group-color-name">' + esc(g) + '</div>' +
+          '<button type="button" class="group-rename-btn" data-group="' + esc(g) + '" title="' + esc(t("renameGroupBtn")) + '" aria-label="' + esc(t("renameGroupBtn")) + '">✎</button>' +
+          '</div>';
+      return '<div class="group-color-row">' + nameRow + '<div class="group-color-swatches">' + swatches + '</div></div>';
     }).join("");
     $all("#groupColorsList .color-swatch, #groupColorsList .color-swatch-none").forEach(function (b) {
       b.addEventListener("click", function () {
         var g = b.dataset.group, c = b.dataset.color;
         if (c) setGroupColor(g, c); else clearGroupColor(g);
+      });
+    });
+    $all("#groupColorsList .group-rename-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.groupRenameTarget = b.dataset.group;
+        renderGroupColorsPopover();
+        var input = $("#groupColorsList .group-rename-input");
+        if (input) { input.focus(); input.select(); }
+      });
+    });
+    $all("#groupColorsList .group-rename-cancel").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.groupRenameTarget = null;
+        renderGroupColorsPopover();
+      });
+    });
+    function commitRename(input) {
+      var oldName = input.dataset.group;
+      var newVal = input.value;
+      state.groupRenameTarget = null;
+      renameGroup(oldName, newVal).then(function () { renderGroupColorsPopover(); });
+    }
+    $all("#groupColorsList .group-rename-save").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var input = $("#groupColorsList .group-rename-input");
+        if (input) commitRename(input);
+      });
+    });
+    $all("#groupColorsList .group-rename-input").forEach(function (inp) {
+      inp.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); commitRename(inp); }
+        else if (e.key === "Escape") { e.preventDefault(); state.groupRenameTarget = null; renderGroupColorsPopover(); }
       });
     });
   }
@@ -2517,6 +2662,17 @@
   }
   function commitImportedRows(entries) {
     entries.forEach(function (entry) { saveContact(null, entry); });
+    // Auto-color any newly-imported group that matches one of the template's
+    // eight presets and doesn't already have a color of its own (see
+    // PRESET_GROUP_COLORS above).
+    var seenGroups = {};
+    entries.forEach(function (entry) {
+      var g = (entry.group || "").trim();
+      if (!g || seenGroups[g]) return;
+      seenGroups[g] = true;
+      var hue = PRESET_GROUP_COLORS[g];
+      if (hue && !groupColorKey(g)) setGroupColor(g, hue);
+    });
     return entries.length;
   }
   function confirmAndImport(entries, msgEl, onDone) {
