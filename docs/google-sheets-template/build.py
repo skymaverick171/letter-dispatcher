@@ -4,6 +4,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.utils import get_column_letter
 from openpyxl.comments import Comment
+from openpyxl.workbook.defined_name import DefinedName
 
 ACCENT = "1E4B8F"
 ACCENT_SOFT = "E3EAF6"
@@ -129,9 +130,28 @@ for i, g in enumerate(group_presets):
     cell.font = Font(name=FONT_NAME, size=11, color=INK)
     cell.fill = PatternFill("solid", fgColor=GROUP_COLORS[i][1])
 
+# Named ranges instead of raw cross-sheet cell references ('Group Names'!$A$5
+# etc.) — both the dropdown and the row-tint conditional formatting below
+# used to point at those cells directly, which round-tripped fine through
+# Excel but silently lost the row coloring when the file was opened in
+# Google Sheets (a real report: Excel kept working, Sheets stopped applying
+# the tint). Named ranges are a plainer, more portable OOXML construct that
+# both Excel and Sheets' .xlsx importer handle the same way, so this is the
+# safer bet for a file meant to be opened in either program.
+GN_LIST_NAME = "GroupNamesList"
+wb.defined_names[GN_LIST_NAME] = DefinedName(
+    GN_LIST_NAME, attr_text=f"'{GN_SHEET}'!$A${GN_FIRST_ROW}:$A${GN_LAST_ROW}"
+)
+GROUP_NAME_REFS = []
+for i in range(len(group_presets)):
+    gn_row = GN_FIRST_ROW + i
+    name = f"GroupName{i + 1}"
+    wb.defined_names[name] = DefinedName(name, attr_text=f"'{GN_SHEET}'!$A${gn_row}")
+    GROUP_NAME_REFS.append(name)
+
 dv = DataValidation(
     type="list",
-    formula1=f"='{GN_SHEET}'!$A${GN_FIRST_ROW}:$A${GN_LAST_ROW}",
+    formula1=f"={GN_LIST_NAME}",
     allow_blank=True,
     showDropDown=False,
 )
@@ -144,15 +164,15 @@ dv.add(f"D2:D{last_blank}")
 # Tint each row by its Group value — soft colors matching the app's own
 # per-group tinting. Applies to the whole visible row (A:D) so a contact
 # reads as belonging to its group at a glance, same intent as the app.
-# Compares against the Group Names cell (not the literal text) so a rename
-# there is picked up automatically instead of silently breaking the tint.
+# Compares against the named range (see above) rather than the literal
+# text, so renaming a value on Group Names still updates the tint
+# everywhere — without depending on a raw cross-sheet cell reference.
 cf_range = f"A2:D{last_blank}"
 for i, (group_name, hex_color) in enumerate(GROUP_COLORS):
-    gn_row = GN_FIRST_ROW + i
     fill = PatternFill("solid", fgColor=hex_color)
     ws.conditional_formatting.add(
         cf_range,
-        FormulaRule(formula=[f"$D2='{GN_SHEET}'!$A${gn_row}"], fill=fill, stopIfTrue=True),
+        FormulaRule(formula=[f"$D2={GROUP_NAME_REFS[i]}"], fill=fill, stopIfTrue=True),
     )
 
 # ---------------------------------------------------------------- Instructions (generic builder, one per language)
