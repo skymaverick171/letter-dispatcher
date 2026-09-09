@@ -628,6 +628,7 @@
     gap: 4px;
     min-width: 190px;
   }
+  .mailto-divider { width: 100%; border: none; border-top: 1px solid var(--border); margin: 4px 0; }
   .mailto-popover .btn { width: 100%; justify-content: flex-start; }
   .attach-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .attach-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -905,17 +906,16 @@
     <div class="panel">
       <div class="panel-head"><h2 data-i18n="step3Title">3. Send via</h2></div>
       <div class="panel-body">
-        <div class="row between" style="margin-bottom:14px;">
+        <div class="row between" style="margin-bottom:12px;">
           <div class="segmented" id="providerSeg">
-            <button data-provider="gmail" class="on">Gmail</button>
-            <button data-provider="outlook">Outlook</button>
+            <button type="button" data-provider="gmail" class="on" data-i18n="providerGmail">Gmail</button>
+            <button type="button" data-provider="outlook" data-i18n="providerOutlook">Outlook</button>
           </div>
           <div class="segmented" id="outlookKindSeg" hidden>
-            <button data-kind="personal" class="on" data-i18n="outlookPersonal">Personal (outlook.com)</button>
-            <button data-kind="work" data-i18n="outlookWork">Work / school</button>
+            <button type="button" data-kind="personal" class="on" data-i18n="outlookPersonal">Personal</button>
+            <button type="button" data-kind="work" data-i18n="outlookWork">Work</button>
           </div>
         </div>
-
         <label class="field" data-i18n="fieldPreview">Preview</label>
         <div class="preview">
           <div class="p-to" id="previewTo">—</div>
@@ -945,10 +945,15 @@
             </button>
             <div class="mailto-popover" id="mailtoPopover" hidden>
               <button type="button" class="btn ghost" data-mail-client="default" data-i18n="mailClientDefault">Default mail app</button>
+              <button type="button" class="btn ghost" data-mail-client="gmail" data-i18n="mailClientGmail">Gmail</button>
               <button type="button" class="btn ghost" data-mail-client="outlook" data-i18n="mailClientOutlook">Outlook (desktop)</button>
+              <button type="button" class="btn ghost" data-mail-client="outlook-mobile" data-i18n="mailClientOutlookMobile">Outlook (mobile)</button>
               <button type="button" class="btn ghost" data-mail-client="spark" data-i18n="mailClientSpark">Spark</button>
               <button type="button" class="btn ghost" data-mail-client="airmail" data-i18n="mailClientAirmail">Airmail</button>
-              <p class="hint" data-i18n="mailClientOutlookHint" style="margin:4px 2px 0;">"Outlook (desktop)" only works if Outlook is set as your device's default mail app — otherwise it opens whatever app actually is the default.</p>
+              <p class="hint" data-i18n="mailClientPickHint" style="margin:4px 2px 0;">Tap any app above to open it. If it isn't already your device's default mail app, your device will offer to make it the default — that's how you switch which one opens next time.</p>
+              <hr class="mailto-divider" aria-hidden="true">
+              <button type="button" class="btn ghost" id="changeDefaultMailBtn" data-i18n="mailClientChangeDefault">Change default mail app…</button>
+              <p class="hint" data-i18n="mailClientChangeDefaultHint" style="margin:4px 2px 0;">Jumps straight to your device's default-apps settings. Works on Windows; on other systems it won't do anything, so pick the app you want above instead.</p>
             </div>
           </div>
         </div>
@@ -1250,9 +1255,9 @@
     dbc: null,
     dbl: null,
     dbg: null,
+    lang: "en",
     provider: "gmail",
     outlookKind: "personal",
-    lang: "en",
   };
 
   // Fixed palette of soft/pastel colors an address-book group can be
@@ -1326,8 +1331,11 @@
       fieldBcc: "Bcc",
       personalizeLabel: "Personalize — open a separate letter for each recipient",
       step3Title: "3. Send via",
-      outlookPersonal: "Personal (outlook.com)",
-      outlookWork: "Work / school",
+      providerGmail: "Gmail",
+      providerOutlook: "Outlook",
+      outlookPersonal: "Personal",
+      outlookWork: "Work",
+      standalonePwaMailHint: "Installed apps hand off through your device's default mail app rather than opening Gmail/Outlook directly — use \"Open in mail app\" below to pick a specific app.",
       fieldPreview: "Preview",
       previewToPrefix: "To: ",
       previewCcPrefix: "Cc: ",
@@ -1335,10 +1343,14 @@
       sendBtnLabel: "Send",
       mailtoBtn: "Open in mail app",
       mailClientDefault: "Default mail app",
+      mailClientGmail: "Gmail",
       mailClientOutlook: "Outlook (desktop)",
+      mailClientOutlookMobile: "Outlook (mobile)",
       mailClientSpark: "Spark",
       mailClientAirmail: "Airmail",
-      mailClientOutlookHint: "\"Outlook (desktop)\" only works if Outlook is set as your device's default mail app — otherwise it opens whatever app actually is the default.",
+      mailClientPickHint: "Tap any app above to open it. If it isn't already your device's default mail app, your device will offer to make it the default — that's how you switch which one opens next time.",
+      mailClientChangeDefault: "Change default mail app…",
+      mailClientChangeDefaultHint: "Jumps straight to your device's default-apps settings on Windows. On Android this doesn't always work (the OS often blocks it) — if nothing happens, open Settings → Apps → Default apps yourself. On other systems it won't do anything, so pick the app you want above instead.",
       fieldAttachments: "Attachments (optional)",
       attachAddBtn: "Add files",
       attachEmptyHint: "No files selected.",
@@ -1488,8 +1500,11 @@
       fieldBcc: "Cci",
       personalizeLabel: "Personnaliser — ouvrir une lettre distincte pour chaque destinataire",
       step3Title: "3. Envoyer via",
-      outlookPersonal: "Personnel (outlook.com)",
-      outlookWork: "Professionnel / scolaire",
+      providerGmail: "Gmail",
+      providerOutlook: "Outlook",
+      outlookPersonal: "Personnel",
+      outlookWork: "Professionnel",
+      standalonePwaMailHint: "Les applications installées passent par l'application de messagerie par défaut de votre appareil plutôt que d'ouvrir Gmail/Outlook directement — utilisez « Ouvrir dans l'application de messagerie » ci-dessous pour choisir une application précise.",
       fieldPreview: "Aperçu",
       previewToPrefix: "À : ",
       previewCcPrefix: "Cc : ",
@@ -1497,10 +1512,14 @@
       sendBtnLabel: "Envoyer",
       mailtoBtn: "Ouvrir dans l'application de messagerie",
       mailClientDefault: "Application par défaut",
+      mailClientGmail: "Gmail",
       mailClientOutlook: "Outlook (bureau)",
+      mailClientOutlookMobile: "Outlook (mobile)",
       mailClientSpark: "Spark",
       mailClientAirmail: "Airmail",
-      mailClientOutlookHint: "« Outlook (bureau) » ne fonctionne que si Outlook est défini comme application de messagerie par défaut sur votre appareil — sinon, c'est l'application réellement par défaut qui s'ouvre.",
+      mailClientPickHint: "Touchez une application ci-dessus pour l'ouvrir. Si ce n'est pas déjà votre application de messagerie par défaut, votre appareil proposera de la définir comme telle — c'est ainsi que vous changez celle qui s'ouvre la prochaine fois.",
+      mailClientChangeDefault: "Changer l'application de messagerie par défaut…",
+      mailClientChangeDefaultHint: "Ouvre directement les paramètres d'applications par défaut de votre appareil sous Windows. Sous Android, cela ne fonctionne pas toujours (le système bloque souvent ce raccourci) — si rien ne se passe, ouvrez vous-même Paramètres → Applications → Applications par défaut. Sur les autres systèmes, cela ne fait rien — choisissez plutôt l'application voulue ci-dessus.",
       fieldAttachments: "Pièces jointes (facultatif)",
       attachAddBtn: "Ajouter des fichiers",
       attachEmptyHint: "Aucun fichier sélectionné.",
@@ -3277,20 +3296,6 @@
   $("#composeSubject").addEventListener("input", updatePreview);
   $("#composeBody").addEventListener("input", updatePreview);
 
-  $("#providerSeg").addEventListener("click", function (e) {
-    var btn = e.target.closest("button[data-provider]");
-    if (!btn) return;
-    state.provider = btn.dataset.provider;
-    $all("#providerSeg button").forEach(function (b) { b.classList.toggle("on", b === btn); });
-    $("#outlookKindSeg").hidden = state.provider !== "outlook";
-  });
-  $("#outlookKindSeg").addEventListener("click", function (e) {
-    var btn = e.target.closest("button[data-kind]");
-    if (!btn) return;
-    state.outlookKind = btn.dataset.kind;
-    $all("#outlookKindSeg button").forEach(function (b) { b.classList.toggle("on", b === btn); });
-  });
-
   function substitute(text, contact) {
     if (!contact) return text;
     return text
@@ -3441,19 +3446,51 @@
     document.body.removeChild(a);
   }
 
-  function buildUrl(provider, to, subject, body, cc, bcc) {
+  // Whether this app is currently running installed/standalone (added to
+  // home screen or desktop) rather than as an ordinary browser tab. A
+  // real-device test found that on Android, once installed as a home-screen
+  // PWA, navigating to a Gmail/Outlook *web page* from inside its restricted
+  // browsing shell can silently download the page instead of opening it —
+  // so in that mode "Send" falls back to a plain mailto: handoff instead
+  // (see below), which is the one mechanism confirmed to work reliably
+  // there. Ordinary browser tabs (desktop or mobile) are unaffected and
+  // still get the real Gmail/Outlook compose page.
+  function isStandalonePwa() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  }
+
+  // Builds the provider-specific web compose URL for the "Send" button
+  // (Gmail's own compose page, or Outlook.com's/Outlook 365's compose page).
+  // Unlike buildMailAppUrl() below, these are real webmail URLs, not
+  // mailto: — clicking one always opens that exact provider, regardless of
+  // which app (if any) is the OS's default mail handler.
+  function buildUrl(provider, outlookKind, to, subject, body, cc, bcc) {
     var enc = encodeURIComponent;
-    var url;
-    if (provider === "gmail") {
-      url = "https://mail.google.com/mail/?view=cm&fs=1&to=" + enc(to) + "&su=" + enc(subject) + "&body=" + enc(body);
-    } else {
-      var base = state.outlookKind === "work" ? "https://outlook.office.com/mail/deeplink/compose" : "https://outlook.live.com/mail/0/deeplink/compose";
-      url = base + "?to=" + enc(to) + "&subject=" + enc(subject) + "&body=" + enc(body);
+    if (provider === "outlook") {
+      var base = outlookKind === "work"
+        ? "https://outlook.office.com/mail/deeplink/compose"
+        : "https://outlook.live.com/mail/0/deeplink/compose";
+      return base + "?to=" + enc(to) + "&subject=" + enc(subject) + "&body=" + enc(body);
     }
+    var url = "https://mail.google.com/mail/u/0/?view=cm&fs=1&tf=cm&to=" + enc(to) + "&su=" + enc(subject) + "&body=" + enc(body);
     if (cc) url += "&cc=" + enc(cc);
     if (bcc) url += "&bcc=" + enc(bcc);
     return url;
   }
+
+  $("#providerSeg").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-provider]");
+    if (!btn) return;
+    state.provider = btn.dataset.provider;
+    $all("#providerSeg button").forEach(function (b) { b.classList.toggle("on", b.dataset.provider === state.provider); });
+    $("#outlookKindSeg").hidden = state.provider !== "outlook";
+  });
+  $("#outlookKindSeg").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-kind]");
+    if (!btn) return;
+    state.outlookKind = btn.dataset.kind;
+    $all("#outlookKindSeg button").forEach(function (b) { b.classList.toggle("on", b.dataset.kind === state.outlookKind); });
+  });
 
   $("#sendBtn").addEventListener("click", function () {
     var status = $("#sendStatus");
@@ -3470,17 +3507,23 @@
       return;
     }
     var ccStr = getCc(), bccStr = getBcc();
+    var standalone = isStandalonePwa();
+    function urlFor(to, subj, bd) {
+      if (standalone) return buildMailAppUrl("default", to, subj, bd, ccStr, bccStr);
+      return buildUrl(state.provider, state.outlookKind, to, subj, bd, ccStr, bccStr);
+    }
+    var standaloneHint = standalone ? '<div class="status-msg">' + esc(t("standalonePwaMailHint")) + '</div>' : "";
     if (personalize) {
       recipients.forEach(function (r, i) {
         setTimeout(function () {
-          openExternalUrl(buildUrl(state.provider, r.email, substitute(subject, r), substitute(body, r), ccStr, bccStr));
+          openExternalUrl(urlFor(r.email, substitute(subject, r), substitute(body, r)));
         }, i * 350);
       });
-      status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+      status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + standaloneHint + attachmentReminderHtml();
     } else {
       var to = recipients.map(function (r) { return r.email; }).join(",");
-      openExternalUrl(buildUrl(state.provider, to, subject, body, ccStr, bccStr));
-      status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+      openExternalUrl(urlFor(to, subject, body));
+      status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + standaloneHint + attachmentReminderHtml();
     }
   });
 
@@ -3529,7 +3572,17 @@
     }
     var to = recipients.map(function (r) { return r.email; }).join(",");
     var ccStr = getCc(), bccStr = getBcc();
-    window.location.href = buildMailAppUrl(client, to, subject, body, ccStr, bccStr);
+    // Use openExternalUrl (a real anchor click) rather than assigning
+    // window.location.href directly: on at least one real Windows/Chrome
+    // setup, setting location.href straight to a mailto: link left the tab
+    // actually navigated to that raw "mailto:...?subject=..." address (shown
+    // in the address bar) instead of handing off to the mail app — likely
+    // because Chrome only treats a real link click as reliably "external",
+    // while a scripted top-level navigation can fall through to loading the
+    // scheme as if it were a page when no handler grabs it fast enough. The
+    // anchor-click approach is the same fix already applied to the "Send"
+    // button for the equivalent Android issue (see openExternalUrl above).
+    openExternalUrl(buildMailAppUrl(client, to, subject, body, ccStr, bccStr));
     $("#sendStatus").innerHTML = '<div class="status-msg">' + esc(t("openedMailAppMsg")) + '</div>' + attachmentReminderHtml();
   }
 
@@ -3557,6 +3610,31 @@
       closeMailtoPopover();
       openInMailClient(btn.dataset.mailClient);
     });
+  });
+  $("#changeDefaultMailBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    closeMailtoPopover();
+    var url;
+    if (/Android/i.test(navigator.userAgent || "")) {
+      // Best-effort only, and less likely to work than the Windows link
+      // below: Android's own "Default apps" settings screen is not flagged
+      // android.intent.category.BROWSABLE, so Chrome refuses — by design,
+      // for security — to launch non-browsable system screens from a web
+      // page on most devices/versions. Kept anyway since it costs nothing
+      // when unsupported (silently does nothing, same as the readdle-spark://
+      // / airmail:// links above) and does work on some OEM builds that
+      // leave the screen unrestricted.
+      url = "intent://#Intent;action=android.settings.MANAGE_DEFAULT_APPS_SETTINGS;end";
+    } else {
+      // ms-settings:defaultapps is a Windows-only URI that jumps straight to
+      // Settings > Apps > Default apps. There is no equivalent on macOS or
+      // iOS, and no protocol-specific (mailto) deep link even on Windows —
+      // this is a best-effort shortcut, same spirit as the readdle-spark:// /
+      // airmail:// links above: it does nothing if the platform doesn't
+      // support it.
+      url = "ms-settings:defaultapps";
+    }
+    openExternalUrl(url);
   });
   document.addEventListener("click", function (e) {
     var pop = $("#mailtoPopover");
