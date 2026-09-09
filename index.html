@@ -1353,6 +1353,7 @@
       personalizeOffMsg: "Not personalized — one email is sent to everyone together.",
       openingWindowsMsg: "Opening {n} window(s) — one per recipient. If your browser blocked pop-ups, allow them for this page.",
       openingOneMsg: "Opening a letter in a new tab for {n} recipient(s).",
+      standalonePwaMailHint: "Installed-app mode: this opens your device's default mail app rather than Gmail/Outlook's own web page specifically — make sure the app you want is set as default.",
       openedMailAppMsg: "Opening your mail app…",
       newContactTitle: "New contact",
       editContactTitle: "Editing contact",
@@ -1515,6 +1516,7 @@
       personalizeOffMsg: "Non personnalisé — un seul e-mail est envoyé à tout le monde.",
       openingWindowsMsg: "Ouverture de {n} fenêtre(s) — une par destinataire. Si votre navigateur a bloqué les fenêtres pop-up, autorisez-les pour cette page.",
       openingOneMsg: "Ouverture d'une lettre dans un nouvel onglet pour {n} destinataire(s).",
+      standalonePwaMailHint: "Mode application installée : ceci ouvre l'application de messagerie par défaut de votre appareil, et non spécifiquement la page web de Gmail/Outlook — vérifiez que la bonne application est définie par défaut.",
       openedMailAppMsg: "Ouverture de votre application de messagerie…",
       newContactTitle: "Nouveau contact",
       editContactTitle: "Modification du contact",
@@ -3441,10 +3443,28 @@
     document.body.removeChild(a);
   }
 
+  // True when this page is running as an installed home-screen/desktop PWA
+  // (standalone display mode) rather than an ordinary browser tab.
+  function isStandalonePwa() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true;
+  }
+
   function buildUrl(provider, to, subject, body, cc, bcc) {
     var enc = encodeURIComponent;
     var url;
-    if (provider === "gmail") {
+    if (isStandalonePwa()) {
+      // Confirmed on a real Android device: navigating from inside the
+      // installed PWA's restricted browsing shell to the Gmail/Outlook web
+      // compose page below can silently download the page as a file
+      // instead of opening it — even via a plain link click (see
+      // openExternalUrl). mailto: is the one mechanism already confirmed
+      // reliable in that same installed context (it's what "Open in mail
+      // app" > Outlook uses), at the cost of opening whichever mail app is
+      // the OS default instead of forcing Gmail/Outlook's web page
+      // specifically.
+      url = "mailto:" + to + "?subject=" + enc(subject) + "&body=" + enc(body);
+    } else if (provider === "gmail") {
       url = "https://mail.google.com/mail/?view=cm&fs=1&to=" + enc(to) + "&su=" + enc(subject) + "&body=" + enc(body);
     } else {
       var base = state.outlookKind === "work" ? "https://outlook.office.com/mail/deeplink/compose" : "https://outlook.live.com/mail/0/deeplink/compose";
@@ -3470,17 +3490,18 @@
       return;
     }
     var ccStr = getCc(), bccStr = getBcc();
+    var pwaHint = isStandalonePwa() ? '<div class="status-msg">' + esc(t("standalonePwaMailHint")) + '</div>' : "";
     if (personalize) {
       recipients.forEach(function (r, i) {
         setTimeout(function () {
           openExternalUrl(buildUrl(state.provider, r.email, substitute(subject, r), substitute(body, r), ccStr, bccStr));
         }, i * 350);
       });
-      status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+      status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + pwaHint + attachmentReminderHtml();
     } else {
       var to = recipients.map(function (r) { return r.email; }).join(",");
       openExternalUrl(buildUrl(state.provider, to, subject, body, ccStr, bccStr));
-      status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+      status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + pwaHint + attachmentReminderHtml();
     }
   });
 
