@@ -3424,6 +3424,23 @@
     renderAttachments();
   });
 
+  // window.open(url, "_blank") is unreliable for an out-of-scope external
+  // URL (Gmail/Outlook web compose) when this app runs as an installed PWA
+  // on Android — instead of opening the compose page, the constrained
+  // WebAPK/TWA shell can end up trying to download the response as a file
+  // rather than navigate to it. A synthesized <a target="_blank"> click is
+  // the standard, more reliable workaround, and behaves exactly like a
+  // normal new-tab link everywhere else (Windows/macOS/desktop browsers).
+  function openExternalUrl(url) {
+    var a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   function buildUrl(provider, to, subject, body, cc, bcc) {
     var enc = encodeURIComponent;
     var url;
@@ -3456,13 +3473,13 @@
     if (personalize) {
       recipients.forEach(function (r, i) {
         setTimeout(function () {
-          window.open(buildUrl(state.provider, r.email, substitute(subject, r), substitute(body, r), ccStr, bccStr), "_blank");
+          openExternalUrl(buildUrl(state.provider, r.email, substitute(subject, r), substitute(body, r), ccStr, bccStr));
         }, i * 350);
       });
       status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
     } else {
       var to = recipients.map(function (r) { return r.email; }).join(",");
-      window.open(buildUrl(state.provider, to, subject, body, ccStr, bccStr), "_blank");
+      openExternalUrl(buildUrl(state.provider, to, subject, body, ccStr, bccStr));
       status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
     }
   });
