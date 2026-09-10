@@ -487,7 +487,7 @@
     max-height: 300px;
     overflow-y: auto;
   }
-  .preview .p-to { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-family: "IBM Plex Mono", monospace; }
+  .preview .p-to { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-family: "IBM Plex Mono", monospace; overflow-wrap: anywhere; word-break: break-word; }
 
   .status-msg {
     font-size: 13px;
@@ -3397,8 +3397,15 @@
     input.value = emails.join(", ");
     return input.value;
   }
-  function getCc() { return splitEmails(state.composeRecipients ? state.composeRecipients.cc : "").join(","); }
-  function getBcc() { return splitEmails(state.composeRecipients ? state.composeRecipients.bcc : "").join(","); }
+  // Joined with ", " (not just ",") so the Cc/Bcc line in the live preview
+  // (#previewCc/#previewBcc, plain text with no manual wrapping) has actual
+  // break points to wrap at — a bare "," left long address lists as one
+  // unbroken run that overflowed the preview box and the page. The space is
+  // harmless for the actual send: both call sites URL-encode this string
+  // before using it (buildUrl/buildMailAppUrl), and "addr1, addr2" is a
+  // completely standard way to write a multi-address Cc/Bcc header.
+  function getCc() { return splitEmails(state.composeRecipients ? state.composeRecipients.cc : "").join(", "); }
+  function getBcc() { return splitEmails(state.composeRecipients ? state.composeRecipients.bcc : "").join(", "); }
 
   function setComposeRecipientsFromLetter(l) {
     if (!l) {
