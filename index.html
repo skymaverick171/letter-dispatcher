@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Letter Dispatcher</title>
@@ -2686,27 +2687,45 @@
     if (sep === "\t") return rows.map(function (r) { return r.join("\t"); }).join("\n");
     return rows.map(function (r) { return r.map(csvEscape).join(","); }).join("\r\n");
   }
+  // Quote-aware TSV/CSV parser. Splitting the whole text into "lines" on
+  // \n/\r *before* separating columns (the previous approach) is wrong for
+  // both formats: a multi-line letter Body is written back out as one
+  // quoted cell (see csvEscape/lettersToDelimited above) and Google Sheets'
+  // own clipboard TSV export quotes a multi-line cell the same way — so a
+  // real embedded newline inside a quoted field must NOT end the row. The
+  // previous line-first approach chopped such a cell into extra rows, whose
+  // stray fragments then got misread as bogus new Subject/Body pairs (a
+  // 7-letter import silently turning into 14, see item 95). This version
+  // walks the text once, character by character, and only treats a bare
+  // \r/\n as a row break when it's outside an open quote.
   function parseDelimited(text) {
     var sep = text.indexOf("\t") !== -1 ? "\t" : ",";
-    var lines = text.split(/\r\n|\n|\r/).filter(function (l) { return l.trim() !== ""; });
-    return lines.map(function (line) {
-      if (sep === "\t") return line.split("\t").map(function (s) { return s.trim(); });
-      // simple CSV split honoring quotes
-      var out = [], field = "", inQ = false;
-      for (var i = 0; i < line.length; i++) {
-        var c = line[i];
-        if (inQ) {
-          if (c === '"') { if (line[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
-          else field += c;
-        } else {
-          if (c === '"') inQ = true;
-          else if (c === ",") { out.push(field); field = ""; }
-          else field += c;
+    var rows = [], row = [], field = "", inQ = false, i = 0;
+    while (i < text.length) {
+      var c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
         }
+        field += c; i++; continue;
       }
-      out.push(field);
-      return out.map(function (s) { return s.trim(); });
-    });
+      if (c === '"') { inQ = true; i++; continue; }
+      if (c === sep) { row.push(field); field = ""; i++; continue; }
+      if (c === "\r" || c === "\n") {
+        row.push(field); field = "";
+        rows.push(row); row = [];
+        if (c === "\r" && text[i + 1] === "\n") i++;
+        i++;
+        continue;
+      }
+      field += c; i++;
+    }
+    row.push(field);
+    rows.push(row);
+    return rows
+      .map(function (r) { return r.map(function (s) { return s.trim(); }); })
+      .filter(function (r) { return r.some(function (s) { return s !== ""; }); });
   }
 
   $("#downloadCsvBtn").addEventListener("click", function () {
@@ -3787,5 +3806,7 @@
   composeSubjectEditor.render();
 })();
 </script>
+
+
 </body>
 </html>
