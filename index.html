@@ -2728,15 +2728,37 @@
       .filter(function (r) { return r.some(function (s) { return s !== ""; }); });
   }
 
+  // Saves text as a real file via the browser's own download mechanism —
+  // whether that shows a "save as" location picker or just drops the file
+  // into the Downloads folder is controlled by the visitor's own browser
+  // setting (Chrome/Edge: Settings > Downloads > "Ask where to save each
+  // file before downloading"), not by this page; there is no web API that
+  // lets a page force that picker to appear. This is the one mechanism that
+  // works everywhere a plain web page runs — unlike `downloadsNS` below,
+  // which is a Cowork-Artifact-only capability that is never present on the
+  // real GitHub Pages deployment, so relying on it alone silently fell back
+  // to the copy-to-clipboard panel for every real user (see item 96).
+  function downloadTextFile(filename, text, mime) {
+    var blob = new Blob([text], { type: (mime || "text/csv") + ";charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
   $("#downloadCsvBtn").addEventListener("click", function () {
     var csv = contactsToDelimited(",");
-    if (!downloadsNS) {
-      $("#copyArea").value = contactsToDelimited("\t");
-      $("#copyPanel").hidden = false;
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    if (downloadsNS) {
+      downloadsNS.save({ filename: "contacts.csv", data: csv }).catch(function () {
+        downloadTextFile("contacts.csv", csv);
+      });
       return;
     }
-    downloadsNS.save({ filename: "contacts.csv", data: csv }).catch(function () {});
+    downloadTextFile("contacts.csv", csv);
   });
 
   $("#showCopyBtn").addEventListener("click", function () {
@@ -2751,13 +2773,13 @@
 
   $("#downloadLettersCsvBtn").addEventListener("click", function () {
     var csv = lettersToDelimited(",");
-    if (!downloadsNS) {
-      $("#copyLetterArea").value = lettersToDelimited("\t");
-      $("#copyLetterPanel").hidden = false;
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    if (downloadsNS) {
+      downloadsNS.save({ filename: "letters.csv", data: csv }).catch(function () {
+        downloadTextFile("letters.csv", csv);
+      });
       return;
     }
-    downloadsNS.save({ filename: "letters.csv", data: csv }).catch(function () {});
+    downloadTextFile("letters.csv", csv);
   });
 
   $("#showCopyLettersBtn").addEventListener("click", function () {
