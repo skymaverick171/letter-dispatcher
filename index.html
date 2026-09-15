@@ -1422,6 +1422,12 @@
       confirmImportText: "Add {n} contact(s) found in the pasted/uploaded data?",
       confirmImportKeepBtn: "Save changes",
       confirmImportCancelBtn: "Cancel",
+      confirmDeleteContactTitle: "Delete this contact?",
+      confirmDeleteContactText: "Delete “{name}” from your address book? This can't be undone.",
+      confirmDeleteLetterTitle: "Delete this letter?",
+      confirmDeleteLetterText: "Delete “{name}”? This can't be undone.",
+      confirmDeleteBtn: "Delete",
+      confirmCancelBtn: "Cancel",
       copyPanelTitle: "Copy and paste into Google Sheets",
       copyPanelHint: "The text was copied to your clipboard (if your browser allowed it) — just paste (Ctrl/Cmd+V) into cell A1 of your Google Sheet, columns will split automatically. If copying didn't work, select the text above manually.",
       importLettersTitle: "Import from Google Sheets",
@@ -1584,6 +1590,12 @@
       confirmImportText: "Ajouter {n} contact(s) trouvé(s) dans les données collées/importées ?",
       confirmImportKeepBtn: "Enregistrer",
       confirmImportCancelBtn: "Annuler",
+      confirmDeleteContactTitle: "Supprimer ce contact ?",
+      confirmDeleteContactText: "Supprimer « {name} » de votre carnet d'adresses ? Cette action est irréversible.",
+      confirmDeleteLetterTitle: "Supprimer cette lettre ?",
+      confirmDeleteLetterText: "Supprimer « {name} » ? Cette action est irréversible.",
+      confirmDeleteBtn: "Supprimer",
+      confirmCancelBtn: "Annuler",
       copyPanelTitle: "Copiez et collez dans Google Sheets",
       copyPanelHint: "Le texte a été copié dans le presse-papiers (si le navigateur l'a autorisé) — collez-le (Ctrl/Cmd+V) dans la cellule A1 de votre Google Sheet, les colonnes se répartiront automatiquement. Si la copie n'a pas fonctionné, sélectionnez le texte ci-dessus manuellement.",
       importLettersTitle: "Importer depuis Google Sheets",
@@ -1655,6 +1667,7 @@
     return dict[key] != null ? dict[key] : (I18N.en[key] != null ? I18N.en[key] : key);
   }
   function tn(key, n) { return t(key).replace("{n}", n); }
+  function tName(key, name) { return t(key).replace("{name}", name); }
   function wrapVars(s) { return s.replace(/\{\{[^}]+\}\}/g, function (m) { return '<code class="ph">' + esc(m) + '</code>'; }); }
 
   function applyI18n() {
@@ -2173,7 +2186,20 @@
       }).join("");
     }
     $all("[data-del-contact]").forEach(function (b) {
-      b.addEventListener("click", function () { deleteContact(b.dataset.delContact); });
+      b.addEventListener("click", function () {
+        var id = b.dataset.delContact;
+        var c = state.contacts.find(function (x) { return x.id === id; });
+        var label = c ? (c.name || c.email || "") : "";
+        showConfirmModal({
+          title: t("confirmDeleteContactTitle"),
+          text: tName("confirmDeleteContactText", label),
+          saveLabel: t("confirmDeleteBtn"),
+          discardLabel: t("confirmCancelBtn"),
+          danger: true
+        }).then(function (shouldDelete) {
+          if (shouldDelete) deleteContact(id);
+        });
+      });
     });
     $all("[data-edit-contact]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -3066,7 +3092,20 @@
       }).join("");
     }
     $all("[data-del-letter]").forEach(function (b) {
-      b.addEventListener("click", function () { deleteLetter(b.dataset.delLetter); });
+      b.addEventListener("click", function () {
+        var id = b.dataset.delLetter;
+        var l = state.letters.find(function (x) { return x.id === id; });
+        var label = l ? (l.subject || "") : "";
+        showConfirmModal({
+          title: t("confirmDeleteLetterTitle"),
+          text: tName("confirmDeleteLetterText", label),
+          saveLabel: t("confirmDeleteBtn"),
+          discardLabel: t("confirmCancelBtn"),
+          danger: true
+        }).then(function (shouldDelete) {
+          if (shouldDelete) deleteLetter(id);
+        });
+      });
     });
     $all("[data-edit-letter]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -3774,7 +3813,9 @@
       $("#confirmText").textContent = opts.text;
       saveBtn.textContent = opts.saveLabel;
       discardBtn.textContent = opts.discardLabel;
+      saveBtn.className = opts.danger ? "btn danger" : "btn primary";
       overlay.hidden = false;
+      if (opts.danger) { discardBtn.focus(); } else { saveBtn.focus(); }
       function cleanup(result) {
         overlay.hidden = true;
         saveBtn.removeEventListener("click", onSave);
