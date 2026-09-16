@@ -2151,32 +2151,49 @@
     return groups.sort(function (a, b) { return a.localeCompare(b); });
   }
 
-  function contactOffices() {
+  // Item 100: the Office filter is the "second" filter, narrowed by
+  // whichever Group is already selected (the "first" filter) — an empty
+  // group means no narrowing, so this also serves as the unfiltered list.
+  function contactOfficesForGroup(group) {
     var seen = {};
     var offices = [];
     state.contacts.forEach(function (c) {
+      if (group && (c.group || "").trim() !== group) return;
       var o = (c.office || "").trim();
       if (o && !seen[o]) { seen[o] = true; offices.push(o); }
     });
     return offices.sort(function (a, b) { return a.localeCompare(b); });
   }
 
+  // Rebuilds just the Office <select>'s options for the given Group value,
+  // keeping the current Office selection when it's still one of the
+  // narrowed options (otherwise resetting it to "All offices"). Returns the
+  // resulting value so callers can sync it back into state.
+  function narrowOfficeOptionsForGroup(officeSelId, group) {
+    var officeSel = $("#" + officeSelId);
+    if (!officeSel) return "";
+    var offices = contactOfficesForGroup(group);
+    var prevOffice = officeSel.value;
+    officeSel.innerHTML = '<option value="">' + esc(t("allOfficesOption")) + '</option>' +
+      offices.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join("");
+    officeSel.value = offices.indexOf(prevOffice) !== -1 ? prevOffice : "";
+    return officeSel.value;
+  }
+
   function populateFilterOptions(officeSelId, groupSelId, statePrefix) {
     var officeSel = $("#" + officeSelId);
     var groupSel = $("#" + groupSelId);
     if (!officeSel || !groupSel) return;
-    var offices = contactOffices();
     var groups = contactGroups();
-    var prevOffice = officeSel.value;
     var prevGroup = groupSel.value;
-    officeSel.innerHTML = '<option value="">' + esc(t("allOfficesOption")) + '</option>' +
-      offices.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join("");
     groupSel.innerHTML = '<option value="">' + esc(t("allGroupsOption")) + '</option>' +
       groups.map(function (g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join("");
-    officeSel.value = offices.indexOf(prevOffice) !== -1 ? prevOffice : "";
     groupSel.value = groups.indexOf(prevGroup) !== -1 ? prevGroup : "";
-    state[statePrefix + "FilterOffice"] = officeSel.value;
     state[statePrefix + "FilterGroup"] = groupSel.value;
+    // Office options are narrowed to the (possibly just-restored) Group
+    // selection above, so the two stay consistent on every rebuild — e.g.
+    // when contacts change while a Group filter is already active.
+    state[statePrefix + "FilterOffice"] = narrowOfficeOptionsForGroup(officeSelId, groupSel.value);
   }
 
   function populateTplFilterOptions() {
@@ -2705,14 +2722,16 @@
   });
   $("#tplFilterGroup").addEventListener("change", function () {
     state.tplFilterGroup = this.value;
+    // Item 100: picking a group narrows the Office dropdown to only the
+    // offices actually used by contacts in that group.
+    state.tplFilterOffice = narrowOfficeOptionsForGroup("tplFilterOffice", this.value);
     updateTplFilterBadge();
     renderLetterRecipientChecklist();
   });
   $("#tplFilterClear").addEventListener("click", function () {
-    state.tplFilterOffice = "";
     state.tplFilterGroup = "";
-    $("#tplFilterOffice").value = "";
     $("#tplFilterGroup").value = "";
+    state.tplFilterOffice = narrowOfficeOptionsForGroup("tplFilterOffice", "");
     updateTplFilterBadge();
     renderLetterRecipientChecklist();
   });
@@ -2809,14 +2828,16 @@
   });
   $("#sendFilterGroup").addEventListener("change", function () {
     state.sendFilterGroup = this.value;
+    // Item 100: picking a group narrows the Office dropdown to only the
+    // offices actually used by contacts in that group.
+    state.sendFilterOffice = narrowOfficeOptionsForGroup("sendFilterOffice", this.value);
     updateSendFilterBadge();
     renderSendRecipientChecklistRows();
   });
   $("#sendFilterClear").addEventListener("click", function () {
-    state.sendFilterOffice = "";
     state.sendFilterGroup = "";
-    $("#sendFilterOffice").value = "";
     $("#sendFilterGroup").value = "";
+    state.sendFilterOffice = narrowOfficeOptionsForGroup("sendFilterOffice", "");
     updateSendFilterBadge();
     renderSendRecipientChecklistRows();
   });
