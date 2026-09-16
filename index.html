@@ -630,9 +630,13 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 190px;
+    min-width: 240px;
   }
-  .mailto-popover .btn { width: 100%; justify-content: flex-start; }
+  .mailto-popover .btn { width: 100%; justify-content: flex-start; text-align: left; }
+  .mail-app-check { width: 14px; flex: none; color: var(--accent); font-weight: 700; visibility: hidden; }
+  .mail-app-opt.on .mail-app-check { visibility: visible; }
+  .mail-app-opt.on { background: var(--surface-2); }
+  .mailto-sep { height: 1px; background: var(--border); margin: 3px 6px; }
   .attach-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .attach-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
   .attach-item {
@@ -913,17 +917,6 @@
     <div class="panel">
       <div class="panel-head"><h2 data-i18n="step3Title">3. Send via</h2></div>
       <div class="panel-body">
-        <div class="row between" style="margin-bottom:14px;">
-          <div class="segmented" id="providerSeg">
-            <button data-provider="gmail" class="on">Gmail</button>
-            <button data-provider="outlook">Outlook</button>
-          </div>
-          <div class="segmented" id="outlookKindSeg" hidden>
-            <button data-kind="personal" class="on" data-i18n="outlookPersonal">Personal (outlook.com)</button>
-            <button data-kind="work" data-i18n="outlookWork">Work / school</button>
-          </div>
-        </div>
-
         <label class="field" data-i18n="fieldPreview">Preview</label>
         <div class="preview">
           <div class="p-to" id="previewTo">—</div>
@@ -951,11 +944,30 @@
               <span data-i18n="mailtoBtn">Open in mail app</span>
               <span class="mailto-chevron" aria-hidden="true">▾</span>
             </button>
-            <div class="mailto-popover" id="mailtoPopover" hidden>
-              <button type="button" class="btn ghost" data-mail-client="default" data-i18n="mailClientDefault">Default mail app</button>
-              <button type="button" class="btn ghost" data-mail-client="outlook" data-i18n="mailClientOutlook">Outlook (desktop)</button>
-              <button type="button" class="btn ghost" data-mail-client="spark" data-i18n="mailClientSpark">Spark</button>
-              <button type="button" class="btn ghost" data-mail-client="airmail" data-i18n="mailClientAirmail">Airmail</button>
+            <div class="mailto-popover" id="mailtoPopover" hidden role="menu">
+              <button type="button" class="btn ghost mail-app-opt" data-mail-app="gmail" role="menuitemradio">
+                <span class="mail-app-check" aria-hidden="true">✓</span><span class="mail-app-label">Gmail</span>
+              </button>
+              <button type="button" class="btn ghost mail-app-opt" data-mail-app="outlook-personal" role="menuitemradio">
+                <span class="mail-app-check" aria-hidden="true">✓</span><span class="mail-app-label" data-i18n="outlookPersonal">Outlook Personal (outlook.com)</span>
+              </button>
+              <button type="button" class="btn ghost mail-app-opt" data-mail-app="outlook-work" role="menuitemradio">
+                <span class="mail-app-check" aria-hidden="true">✓</span><span class="mail-app-label" data-i18n="outlookWork">Outlook Work / school</span>
+              </button>
+              <div class="mailto-sep" role="separator"></div>
+              <button type="button" class="btn ghost mail-app-opt" data-mail-app="default" role="menuitemradio">
+                <span class="mail-app-check" aria-hidden="true">✓</span><span class="mail-app-label" data-i18n="mailClientDefault">Default mail app</span>
+              </button>
+              <button type="button" class="btn ghost mail-app-opt" data-mail-app="outlook-desktop" role="menuitemradio">
+                <span class="mail-app-check" aria-hidden="true">✓</span><span class="mail-app-label" data-i18n="mailClientOutlook">Outlook (desktop)</span>
+              </button>
+              <button type="button" class="btn ghost mail-app-opt" data-mail-app="spark" role="menuitemradio">
+                <span class="mail-app-check" aria-hidden="true">✓</span><span class="mail-app-label" data-i18n="mailClientSpark">Spark</span>
+              </button>
+              <button type="button" class="btn ghost mail-app-opt" data-mail-app="airmail" role="menuitemradio">
+                <span class="mail-app-check" aria-hidden="true">✓</span><span class="mail-app-label" data-i18n="mailClientAirmail">Airmail</span>
+              </button>
+              <p class="hint" data-i18n="mailAppRememberHint" style="margin:4px 2px 0;">Your pick is remembered — Send keeps using it until you choose again here.</p>
               <p class="hint" data-i18n="mailClientOutlookHint" style="margin:4px 2px 0;">"Outlook (desktop)" only works if Outlook is set as your device's default mail app — otherwise it opens whatever app actually is the default.</p>
             </div>
           </div>
@@ -1262,8 +1274,7 @@
     dbc: null,
     dbl: null,
     dbg: null,
-    provider: "gmail",
-    outlookKind: "personal",
+    mailApp: "gmail",
     lang: "en",
   };
 
@@ -1338,8 +1349,8 @@
       fieldBcc: "Bcc",
       personalizeLabel: "Personalize — open a separate letter for each recipient",
       step3Title: "3. Send via",
-      outlookPersonal: "Personal (outlook.com)",
-      outlookWork: "Work / school",
+      outlookPersonal: "Outlook Personal (outlook.com)",
+      outlookWork: "Outlook Work / school",
       fieldPreview: "Preview",
       previewToPrefix: "To: ",
       previewCcPrefix: "Cc: ",
@@ -1350,6 +1361,7 @@
       mailClientOutlook: "Outlook (desktop)",
       mailClientSpark: "Spark",
       mailClientAirmail: "Airmail",
+      mailAppRememberHint: "Your pick is remembered — Send keeps using it until you choose again here.",
       mailClientOutlookHint: "\"Outlook (desktop)\" only works if Outlook is set as your device's default mail app — otherwise it opens whatever app actually is the default.",
       fieldAttachments: "Attachments (optional)",
       attachAddBtn: "Add files",
@@ -1506,8 +1518,8 @@
       fieldBcc: "Cci",
       personalizeLabel: "Personnaliser — ouvrir une lettre distincte pour chaque destinataire",
       step3Title: "3. Envoyer via",
-      outlookPersonal: "Personnel (outlook.com)",
-      outlookWork: "Professionnel / scolaire",
+      outlookPersonal: "Outlook Personnel (outlook.com)",
+      outlookWork: "Outlook Professionnel / scolaire",
       fieldPreview: "Aperçu",
       previewToPrefix: "À : ",
       previewCcPrefix: "Cc : ",
@@ -1518,6 +1530,7 @@
       mailClientOutlook: "Outlook (bureau)",
       mailClientSpark: "Spark",
       mailClientAirmail: "Airmail",
+      mailAppRememberHint: "Votre choix est mémorisé — Envoyer continuera à l'utiliser jusqu'à ce que vous en choisissiez un autre ici.",
       mailClientOutlookHint: "« Outlook (bureau) » ne fonctionne que si Outlook est défini comme application de messagerie par défaut sur votre appareil — sinon, c'est l'application réellement par défaut qui s'ouvre.",
       fieldAttachments: "Pièces jointes (facultatif)",
       attachAddBtn: "Ajouter des fichiers",
@@ -3425,20 +3438,6 @@
   $("#composeSubject").addEventListener("input", updatePreview);
   $("#composeBody").addEventListener("input", updatePreview);
 
-  $("#providerSeg").addEventListener("click", function (e) {
-    var btn = e.target.closest("button[data-provider]");
-    if (!btn) return;
-    state.provider = btn.dataset.provider;
-    $all("#providerSeg button").forEach(function (b) { b.classList.toggle("on", b === btn); });
-    $("#outlookKindSeg").hidden = state.provider !== "outlook";
-  });
-  $("#outlookKindSeg").addEventListener("click", function (e) {
-    var btn = e.target.closest("button[data-kind]");
-    if (!btn) return;
-    state.outlookKind = btn.dataset.kind;
-    $all("#outlookKindSeg button").forEach(function (b) { b.classList.toggle("on", b === btn); });
-  });
-
   function substitute(text, contact) {
     if (!contact) return text;
     return text
@@ -3615,14 +3614,54 @@
     document.body.removeChild(a);
   }
 
-  function buildUrl(provider, to, subject, body, cc, bcc) {
+  // The six/seven mail-app choices live in one place now (the "Open in mail
+  // app" popover) instead of a separate Gmail/Outlook toggle plus a
+  // duplicate dropdown. MAIL_APPS_WEB marks which ones are web-compose
+  // pages (opened in a new tab, one per recipient when personalizing) —
+  // everything else is a local-app handoff via mailto:/a custom URL scheme
+  // (opened in this same tab/window, always as one combined message, same
+  // as this app has always done for "Open in mail app").
+  var MAIL_APPS_WEB = { gmail: true, "outlook-personal": true, "outlook-work": true };
+
+  function buildWebComposeUrl(app, to, subject, body, cc, bcc) {
     var enc = encodeURIComponent;
     var url;
-    if (provider === "gmail") {
+    if (app === "gmail") {
       url = "https://mail.google.com/mail/?view=cm&fs=1&to=" + enc(to) + "&su=" + enc(subject) + "&body=" + enc(body);
     } else {
-      var base = state.outlookKind === "work" ? "https://outlook.office.com/mail/deeplink/compose" : "https://outlook.live.com/mail/0/deeplink/compose";
+      var base = app === "outlook-work" ? "https://outlook.office.com/mail/deeplink/compose" : "https://outlook.live.com/mail/0/deeplink/compose";
       url = base + "?to=" + enc(to) + "&subject=" + enc(subject) + "&body=" + enc(body);
+    }
+    if (cc) url += "&cc=" + enc(cc);
+    if (bcc) url += "&bcc=" + enc(bcc);
+    return url;
+  }
+
+  // A browser page can't enumerate which mail apps are actually installed —
+  // there's no such API. Each option below is a best-effort deep link using
+  // that app's own documented URL scheme; if the app isn't installed the
+  // link silently does nothing. Apps with no distinct scheme of their own
+  // (e.g. Apple Mail, Thunderbird) aren't listed separately since they'd be
+  // indistinguishable from "Default mail app" (mailto:) below.
+  function buildMailAppUrl(app, to, subject, body, cc, bcc) {
+    var enc = encodeURIComponent;
+    var url;
+    // "outlook-desktop" intentionally falls through to the plain mailto:
+    // branch below, same as "default". ms-outlook://compose looks like it
+    // should be desktop Outlook's own deep link, but it's actually the
+    // Outlook Mobile (iOS/Android) app's scheme — on Windows and Mac
+    // desktop, Outlook (classic, new Outlook, or Mac) has no compose URL
+    // scheme of its own, so it opens (if at all) without picking up
+    // to/subject/body. The only way a web page can hand off prefilled
+    // content to desktop Outlook is the standard mailto: link, and only
+    // once Outlook is set as the OS's default mail app (Windows: Settings >
+    // Apps > Default apps > Mail; Mac: Mail.app's own default-app setting).
+    if (app === "spark") {
+      url = "readdle-spark://compose?recipient=" + to + "&subject=" + enc(subject) + "&body=" + enc(body);
+    } else if (app === "airmail") {
+      url = "airmail://compose?to=" + to + "&subject=" + enc(subject) + "&plainBody=" + enc(body);
+    } else {
+      url = "mailto:" + to + "?subject=" + enc(subject) + "&body=" + enc(body);
     }
     if (cc) url += "&cc=" + enc(cc);
     if (bcc) url += "&bcc=" + enc(bcc);
@@ -3644,74 +3683,48 @@
       return;
     }
     var ccStr = getCc(), bccStr = getBcc();
-    if (personalize) {
-      recipients.forEach(function (r, i) {
-        setTimeout(function () {
-          openExternalUrl(buildUrl(state.provider, r.email, substitute(subject, r), substitute(body, r), ccStr, bccStr));
-        }, i * 350);
-      });
-      status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+    var app = state.mailApp;
+    if (MAIL_APPS_WEB[app]) {
+      if (personalize) {
+        recipients.forEach(function (r, i) {
+          setTimeout(function () {
+            openExternalUrl(buildWebComposeUrl(app, r.email, substitute(subject, r), substitute(body, r), ccStr, bccStr));
+          }, i * 350);
+        });
+        status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+      } else {
+        var to = recipients.map(function (r) { return r.email; }).join(",");
+        openExternalUrl(buildWebComposeUrl(app, to, subject, body, ccStr, bccStr));
+        status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+      }
     } else {
-      var to = recipients.map(function (r) { return r.email; }).join(",");
-      openExternalUrl(buildUrl(state.provider, to, subject, body, ccStr, bccStr));
-      status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
+      // Local-app handoff (default/Outlook desktop/Spark/Airmail): always
+      // one combined message to every recipient, same as this app's "Open
+      // in mail app" has always done — a page can't reliably fire off N
+      // separate mailto:/custom-scheme handoffs in a row the way it can
+      // open N browser tabs.
+      var toAll = recipients.map(function (r) { return r.email; }).join(",");
+      window.location.href = buildMailAppUrl(app, toAll, subject, body, ccStr, bccStr);
+      status.innerHTML = '<div class="status-msg">' + esc(t("openedMailAppMsg")) + '</div>' + attachmentReminderHtml();
     }
   });
-
-  // A browser page can't enumerate which mail apps are actually installed —
-  // there's no such API. Each option below is a best-effort deep link using
-  // that app's own documented URL scheme; if the app isn't installed the
-  // link silently does nothing. Apps with no distinct scheme of their own
-  // (e.g. Apple Mail, Thunderbird) aren't listed separately since they'd be
-  // indistinguishable from "Default mail app" (mailto:) below.
-  function buildMailAppUrl(client, to, subject, body, cc, bcc) {
-    var enc = encodeURIComponent;
-    var url;
-    // "outlook" intentionally falls through to the plain mailto: branch
-    // below, same as "default". ms-outlook://compose looks like it should
-    // be desktop Outlook's own deep link, but it's actually the Outlook
-    // Mobile (iOS/Android) app's scheme — on Windows and Mac desktop,
-    // Outlook (classic, new Outlook, or Mac) has no compose URL scheme of
-    // its own, so it opens (if at all) without picking up to/subject/body.
-    // The only way a web page can hand off prefilled content to desktop
-    // Outlook is the standard mailto: link, and only once Outlook is set as
-    // the OS's default mail app (Windows: Settings > Apps > Default apps >
-    // Mail; Mac: Mail.app's own default-app setting).
-    if (client === "spark") {
-      url = "readdle-spark://compose?recipient=" + to + "&subject=" + enc(subject) + "&body=" + enc(body);
-    } else if (client === "airmail") {
-      url = "airmail://compose?to=" + to + "&subject=" + enc(subject) + "&plainBody=" + enc(body);
-    } else {
-      url = "mailto:" + to + "?subject=" + enc(subject) + "&body=" + enc(body);
-    }
-    if (cc) url += "&cc=" + enc(cc);
-    if (bcc) url += "&bcc=" + enc(bcc);
-    return url;
-  }
-
-  function openInMailClient(client) {
-    if (!$("#letterSelect").value) {
-      $("#sendStatus").innerHTML = '<div class="status-msg warn">' + esc(t("selectLetterWarn")) + '</div>';
-      return;
-    }
-    var recipients = getRecipients();
-    var subject = $("#composeSubject").value;
-    var body = $("#composeBody").value;
-    if (!recipients.length) {
-      $("#sendStatus").innerHTML = '<div class="status-msg warn">' + esc(t("selectRecipientWarn")) + '</div>';
-      return;
-    }
-    var to = recipients.map(function (r) { return r.email; }).join(",");
-    var ccStr = getCc(), bccStr = getBcc();
-    window.location.href = buildMailAppUrl(client, to, subject, body, ccStr, bccStr);
-    $("#sendStatus").innerHTML = '<div class="status-msg">' + esc(t("openedMailAppMsg")) + '</div>' + attachmentReminderHtml();
-  }
 
   function closeMailtoPopover() {
     var pop = $("#mailtoPopover");
     if (pop) pop.hidden = true;
     var btn = $("#mailtoBtn");
     if (btn) btn.setAttribute("aria-expanded", "false");
+  }
+
+  // Picking an item here only sets/remembers the default mail app — it does
+  // NOT send anything by itself. Actually sending always happens via the
+  // "Send" button above, which reads state.mailApp.
+  function setMailApp(app) {
+    state.mailApp = app;
+    try { localStorage.setItem("mailDispatcherMailApp", app); } catch (e) {}
+    $all("#mailtoPopover [data-mail-app]").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.mailApp === app);
+    });
   }
 
   $("#mailtoBtn").addEventListener("click", function (e) {
@@ -3721,15 +3734,11 @@
     pop.hidden = !opening;
     $("#mailtoBtn").setAttribute("aria-expanded", String(opening));
   });
-  $all("#mailtoPopover [data-mail-client]").forEach(function (btn) {
+  $all("#mailtoPopover [data-mail-app]").forEach(function (btn) {
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
-      // Close first, then hand off to the mail client: opening a custom
-      // URL scheme can trigger the OS's own "choose an app" dialog, which
-      // grabs focus outside the page — closing the popover beforehand means
-      // it never looks stuck open behind that, however the OS reacts.
+      setMailApp(btn.dataset.mailApp);
       closeMailtoPopover();
-      openInMailClient(btn.dataset.mailClient);
     });
   });
   document.addEventListener("click", function (e) {
@@ -3741,6 +3750,19 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") closeMailtoPopover();
   });
+
+  // Restores the remembered mail-app choice (defaults to Gmail the first
+  // time, matching this app's previous default of the Gmail segmented
+  // button) and reflects it as the checked item in the popover.
+  (function initMailApp() {
+    var saved = null;
+    try { saved = localStorage.getItem("mailDispatcherMailApp"); } catch (e) {}
+    var valid = { gmail: 1, "outlook-personal": 1, "outlook-work": 1, "default": 1, "outlook-desktop": 1, spark: 1, airmail: 1 };
+    state.mailApp = (saved && valid[saved]) ? saved : "gmail";
+    $all("#mailtoPopover [data-mail-app]").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.mailApp === state.mailApp);
+    });
+  })();
 
   // ---------- offline support + a real install signal for Chrome/Edge ----------
   // A registered service worker with a fetch handler is one of the criteria
