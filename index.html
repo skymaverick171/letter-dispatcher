@@ -613,6 +613,57 @@
     min-width: 150px;
   }
   .badge-popover .btn { width: 100%; justify-content: flex-start; }
+  .badge-popover-addrs {
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 210px;
+    max-width: 280px;
+  }
+  .badge-addr-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 5px;
+    border-radius: 6px;
+  }
+  .badge-addr-role {
+    flex: none;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .badge-addr-role.role-to { background: var(--accent-soft); color: var(--accent); }
+  .badge-addr-role.role-cc { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .badge-addr-role.role-bcc { background: color-mix(in srgb, var(--custom) 18%, transparent); color: var(--custom); }
+  .badge-addr-email {
+    font-size: 12.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .badge-addr-empty {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 5px 6px;
+    max-width: 220px;
+  }
+  .badge-popover-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .badge-popover-addrs + .badge-popover-actions {
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+    margin-top: 2px;
+  }
   .mailto-wrap { position: relative; display: inline-flex; }
   #mailtoBtn { display: inline-flex; align-items: center; gap: 6px; }
   .mailto-chevron { font-size: 11px; transition: transform 0.15s ease; }
@@ -856,8 +907,11 @@
               <span class="badge-wrap">
                 <button type="button" class="badge badge-btn" id="sendRecipientsBadge" aria-haspopup="true" aria-expanded="false">0</button>
                 <div class="badge-popover" id="sendRecipientsBadgePopover" hidden>
-                  <button type="button" class="btn ghost" id="sendSelectAllBtn" data-i18n="selectAllBtn">Select all</button>
-                  <button type="button" class="btn ghost" id="sendDeselectAllBtn" data-i18n="deselectAllBtn">Deselect all</button>
+                  <div class="badge-popover-addrs" id="sendRecipientsBadgeAddrs"></div>
+                  <div class="badge-popover-actions">
+                    <button type="button" class="btn ghost" id="sendSelectAllBtn" data-i18n="selectAllBtn">Select all</button>
+                    <button type="button" class="btn ghost" id="sendDeselectAllBtn" data-i18n="deselectAllBtn">Deselect all</button>
+                  </div>
                 </div>
               </span>
             </span>
@@ -1268,6 +1322,13 @@
     sendFilterGroup: "",
     composeRecipients: null,
     composeLetterId: null,
+    // Session-only "To" selection (checked contacts + free-typed extra
+    // addresses) per letter, for the Send tab's "Select recipients" picker.
+    // Deliberately NOT part of the persisted letter record and never
+    // written to the db/localStorage — closing and reopening the app
+    // always starts "To" blank again. Only Cc/Bcc (item 90's fields on
+    // the letter itself) survive a restart — see item 99.
+    sendSessionTo: {},
     composeAttachments: [],
     groupColorDocs: [],
     groupRenameTarget: null,
@@ -1393,6 +1454,10 @@
       clearFiltersBtn: "Clear filters",
       selectAllBtn: "Select all",
       deselectAllBtn: "Deselect all",
+      addrRoleTo: "To",
+      addrRoleCc: "Cc",
+      addrRoleBcc: "Bcc",
+      noRecipientsSelectedHint: "No recipients selected yet.",
       groupFilterLabel: "Filter by group",
       addContactBtn: "Save contact",
       nameEmailWarn: "Enter a name and a valid email.",
@@ -1562,6 +1627,10 @@
       clearFiltersBtn: "Effacer les filtres",
       selectAllBtn: "Tout sélectionner",
       deselectAllBtn: "Tout désélectionner",
+      addrRoleTo: "À",
+      addrRoleCc: "Cc",
+      addrRoleBcc: "Cci",
+      noRecipientsSelectedHint: "Aucun destinataire sélectionné pour l'instant.",
       groupFilterLabel: "Filtrer par groupe",
       addContactBtn: "Enregistrer le contact",
       nameEmailWarn: "Indiquez un nom et un email valide.",
@@ -2380,7 +2449,10 @@
       boxId: "sendContactChecklist",
       filterOffice: state.sendFilterOffice,
       filterGroup: state.sendFilterGroup,
-      badgeId: "sendRecipientsBadge",
+      // No badgeId here on purpose: the Send-tab counter reflects the union
+      // of To + Cc + Bcc addresses (see updateSendRecipientsBadge), not just
+      // the checked-contact count that the generic per-click badge update
+      // (renderRecipientChecklist's own badgeId handling) would give it.
       ccInputId: "sendCc",
       bccInputId: "sendBcc",
       getSelectedIds: function () { return (state.composeRecipients && state.composeRecipients.contactIds) || []; },
@@ -2393,7 +2465,7 @@
         } else {
           ids = ids.filter(function (x) { return x !== id; });
         }
-        saveLetterField(letterId, { toContactIds: ids });
+        setSendToState(letterId, { contactIds: ids });
       },
       onCcBccChange: function (field, value) {
         var letterId = $("#letterSelect").value;
@@ -2401,8 +2473,10 @@
         var patch = {};
         patch[field] = value;
         saveLetterField(letterId, patch);
+        updateSendRecipientsBadge();
       }
     });
+    updateSendRecipientsBadge();
   }
 
   function tplChecklistFilterOpts() {
@@ -2434,7 +2508,7 @@
     var visible = filteredContactsForChecklist(sendChecklistFilterOpts()).map(function (c) { return c.id; });
     var ids = state.composeRecipients.contactIds.slice();
     visible.forEach(function (id) { if (ids.indexOf(id) === -1) ids.push(id); });
-    saveLetterField(letterId, { toContactIds: ids });
+    setSendToState(letterId, { contactIds: ids });
     renderSendRecipientChecklistRows();
   }
   function sendDeselectAllVisible() {
@@ -2442,7 +2516,7 @@
     if (!letterId || !state.composeRecipients) return;
     var visible = filteredContactsForChecklist(sendChecklistFilterOpts()).map(function (c) { return c.id; });
     var ids = state.composeRecipients.contactIds.filter(function (id) { return visible.indexOf(id) === -1; });
-    saveLetterField(letterId, { toContactIds: ids });
+    setSendToState(letterId, { contactIds: ids });
     renderSendRecipientChecklistRows();
   }
 
@@ -2450,20 +2524,99 @@
   // mirroring the Letters-tab "Save letter" outcome) without forcing the
   // heavy renderLetters() cascade that would rebuild — and reset the scroll
   // position of — the Send-tab checklist on every keystroke or click.
+  // Only ever called with cc/bcc/personalize now (see item 99) — the "To"
+  // side (contactIds/extraEmails) goes through setSendToState instead,
+  // which deliberately never reaches the durable letter record.
+  //
+  // Bug fixed alongside item 99: in local-storage mode (no window.claude —
+  // i.e. the actual GitHub Pages deployment, not the Cowork-hosted copy)
+  // this function updated state.letters in memory but never wrote the
+  // change back to localStorage the way saveLetter()/deleteLetter() do —
+  // so Cc/Bcc typed on the Send tab looked saved but silently vanished on
+  // reload. Now mirrors saveLetter()'s local-mode lsSave() call.
   function saveLetterField(letterId, patch) {
     if (state.dbl) {
       state.dbl.doc(letterId).update(patch);
     }
     var l = state.letters.find(function (x) { return x.id === letterId; });
     if (l) Object.assign(l, patch);
+    if (!state.dbl) lsSave(LS_KEYS.letters, state.letters);
     if ($("#letterSelect").value === letterId && state.composeRecipients) {
-      if (patch.toContactIds !== undefined) state.composeRecipients.contactIds = patch.toContactIds;
-      if (patch.extraEmails !== undefined) state.composeRecipients.extraEmails = patch.extraEmails;
       if (patch.cc !== undefined) state.composeRecipients.cc = patch.cc;
       if (patch.bcc !== undefined) state.composeRecipients.bcc = patch.bcc;
       if (patch.personalize !== undefined) state.composeRecipients.personalize = patch.personalize;
     }
     updatePreview();
+  }
+
+  // Updates the Send tab's session-only "To" selection (see state.sendSessionTo
+  // above) — the counterpart to saveLetterField for the "To" contact-ids and
+  // free-typed extra addresses, which item 99 deliberately keeps out of the
+  // persisted letter record: closing and reopening the app always starts
+  // "To" blank, while Cc/Bcc (still routed through saveLetterField) survive.
+  function setSendToState(letterId, patch) {
+    var cur = state.sendSessionTo[letterId] || { contactIds: [], extraEmails: "" };
+    var next = { contactIds: cur.contactIds, extraEmails: cur.extraEmails };
+    if (patch.contactIds !== undefined) next.contactIds = patch.contactIds;
+    if (patch.extraEmails !== undefined) next.extraEmails = patch.extraEmails;
+    state.sendSessionTo[letterId] = next;
+    if ($("#letterSelect").value === letterId && state.composeRecipients) {
+      if (patch.contactIds !== undefined) state.composeRecipients.contactIds = patch.contactIds;
+      if (patch.extraEmails !== undefined) state.composeRecipients.extraEmails = patch.extraEmails;
+    }
+    updatePreview();
+    updateSendRecipientsBadge();
+  }
+
+  // Gathers every address currently selected for sending, split by role, for
+  // the Send-tab counter and its address-list popover (item 99): contacts
+  // checked as "To" plus any free-typed extra addresses, and whatever is in
+  // the Cc/Bcc fields — so the count/list cover the whole outgoing message,
+  // not just the To checkboxes.
+  function computeSendSelectedAddresses() {
+    if (!state.composeRecipients) return { to: [], cc: [], bcc: [] };
+    var cr = state.composeRecipients;
+    var to = (cr.contactIds || []).map(function (id) {
+      var c = state.contacts.find(function (x) { return x.id === id; });
+      return c ? { name: c.name, email: c.email } : null;
+    }).filter(Boolean);
+    splitEmails(cr.extraEmails).forEach(function (email) { to.push({ name: email, email: email }); });
+    var cc = splitEmails(cr.cc).map(function (email) { return { name: email, email: email }; });
+    var bcc = splitEmails(cr.bcc).map(function (email) { return { name: email, email: email }; });
+    return { to: to, cc: cc, bcc: bcc };
+  }
+
+  // Renders the address list shown when the Send-tab counter is clicked
+  // (#sendRecipientsBadgeAddrs), tagging each address with its role.
+  function renderSendRecipientsBadgeAddrs(sel) {
+    var box = $("#sendRecipientsBadgeAddrs");
+    if (!box) return;
+    sel = sel || computeSendSelectedAddresses();
+    var rows = [];
+    function addRows(list, roleClass, roleLabel) {
+      list.forEach(function (r) {
+        rows.push('<div class="badge-addr-row"><span class="badge-addr-role ' + roleClass + '">' + esc(roleLabel) + '</span><span class="badge-addr-email">' + esc(r.email) + '</span></div>');
+      });
+    }
+    addRows(sel.to, "role-to", t("addrRoleTo"));
+    addRows(sel.cc, "role-cc", t("addrRoleCc"));
+    addRows(sel.bcc, "role-bcc", t("addrRoleBcc"));
+    box.innerHTML = rows.length ? rows.join("") : '<div class="badge-addr-empty">' + esc(t("noRecipientsSelectedHint")) + '</div>';
+  }
+
+  // Counter shows the number of distinct addresses across To/Cc/Bcc (not
+  // just the To-checkbox count) — the same address checked as both To and
+  // Cc only counts once, matching "how many people actually get this".
+  function updateSendRecipientsBadge() {
+    var badge = $("#sendRecipientsBadge");
+    if (!badge) return;
+    var sel = computeSendSelectedAddresses();
+    var seen = {};
+    [sel.to, sel.cc, sel.bcc].forEach(function (list) {
+      list.forEach(function (r) { seen[r.email.trim().toLowerCase()] = true; });
+    });
+    badge.textContent = Object.keys(seen).length;
+    renderSendRecipientsBadgeAddrs(sel);
   }
 
   function renderSendRecipientsPanel() {
@@ -2480,8 +2633,7 @@
     $("#sendBcc").value = state.composeRecipients.bcc || "";
     $("#sendPersonalize").checked = state.composeRecipients.personalize !== false;
     renderSendRecipientChecklistRows();
-    var badge = $("#sendRecipientsBadge");
-    if (badge) badge.textContent = (state.composeRecipients.contactIds || []).length;
+    updateSendRecipientsBadge();
   }
 
   // Caps a scrollable list box to show at most `visibleCount` rows at their
@@ -2594,6 +2746,7 @@
     var pop = $("#sendRecipientsBadgePopover");
     var opening = pop.hidden;
     closeTplRecipientsBadgePopover();
+    if (opening) renderSendRecipientsBadgeAddrs();
     pop.hidden = !opening;
     $("#sendRecipientsBadge").setAttribute("aria-expanded", String(opening));
   });
@@ -2671,7 +2824,7 @@
   $("#sendExtraEmails").addEventListener("change", function () {
     var letterId = $("#letterSelect").value;
     if (!letterId) return;
-    saveLetterField(letterId, { extraEmails: this.value.trim() });
+    setSendToState(letterId, { extraEmails: this.value.trim() });
   });
   $("#sendCc").addEventListener("change", function () {
     var letterId = $("#letterSelect").value;
@@ -3495,9 +3648,14 @@
       updatePreview();
       return;
     }
+    // "To" (contactIds/extraEmails) intentionally comes from the session-only
+    // sendSessionTo map, never from the letter's own toContactIds/extraEmails
+    // fields — see item 99: the Send tab's "To" pick always starts blank on
+    // a fresh session, unlike Cc/Bcc which load from the persisted letter.
+    var sessionTo = state.sendSessionTo[l.id] || { contactIds: [], extraEmails: "" };
     var next = {
-      contactIds: (l.toContactIds || []).slice(),
-      extraEmails: l.extraEmails || "",
+      contactIds: sessionTo.contactIds.slice(),
+      extraEmails: sessionTo.extraEmails || "",
       cc: l.cc || "",
       bcc: l.bcc || "",
       personalize: l.personalize !== false
