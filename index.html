@@ -628,7 +628,12 @@
     gap: 7px;
     padding: 3px 5px;
     border-radius: 6px;
+    cursor: pointer;
   }
+  .badge-addr-row:hover { background: var(--surface-2); }
+  .badge-addr-check { flex: none; margin: 0; cursor: pointer; }
+  .badge-addr-row:has(.badge-addr-check:not(:checked)) { opacity: 0.5; }
+  .badge-addr-row:has(.badge-addr-check:not(:checked)) .badge-addr-email { text-decoration: line-through; }
   .badge-addr-role {
     flex: none;
     font-family: "IBM Plex Mono", monospace;
@@ -2595,16 +2600,30 @@
     var cr = state.composeRecipients;
     var to = (cr.contactIds || []).map(function (id) {
       var c = state.contacts.find(function (x) { return x.id === id; });
-      return c ? { name: c.name, email: c.email } : null;
+      return c ? { name: c.name, email: c.email, kind: "to-contact", id: id } : null;
     }).filter(Boolean);
-    splitEmails(cr.extraEmails).forEach(function (email) { to.push({ name: email, email: email }); });
-    var cc = splitEmails(cr.cc).map(function (email) { return { name: email, email: email }; });
-    var bcc = splitEmails(cr.bcc).map(function (email) { return { name: email, email: email }; });
+    splitEmails(cr.extraEmails).forEach(function (email) { to.push({ name: email, email: email, kind: "to-extra" }); });
+    var cc = splitEmails(cr.cc).map(function (email) { return { name: email, email: email, kind: "cc" }; });
+    var bcc = splitEmails(cr.bcc).map(function (email) { return { name: email, email: email, kind: "bcc" }; });
     return { to: to, cc: cc, bcc: bcc };
   }
 
+  // Item 101: while a checkbox toggle inside the counter popover's own
+  // address list is being processed, this stays true so the many code paths
+  // that funnel through updateSendRecipientsBadge() (setSendToState,
+  // renderSendRecipientChecklistRows, etc.) update only the numeric count
+  // and leave the popover's row list alone. Without this, unchecking a
+  // single address would immediately vanish that row (it's no longer part
+  // of the "selected" set computeSendSelectedAddresses returns), making it
+  // impossible to check it back on within the same popover-open session —
+  // exactly the "только этот адрес" (only this address) behavior requested.
+  var suppressPopoverAddrsRerender = false;
+
   // Renders the address list shown when the Send-tab counter is clicked
-  // (#sendRecipientsBadgeAddrs), tagging each address with its role.
+  // (#sendRecipientsBadgeAddrs). Each row (item 101) is a real checkbox the
+  // user can toggle right there to add/remove that one address from its
+  // role, tagged with data-kind/data-id/data-email so the delegated change
+  // listener below knows exactly what to mutate.
   function renderSendRecipientsBadgeAddrs(sel) {
     var box = $("#sendRecipientsBadgeAddrs");
     if (!box) return;
@@ -2612,7 +2631,15 @@
     var rows = [];
     function addRows(list, roleClass, roleLabel) {
       list.forEach(function (r) {
-        rows.push('<div class="badge-addr-row"><span class="badge-addr-role ' + roleClass + '">' + esc(roleLabel) + '</span><span class="badge-addr-email">' + esc(r.email) + '</span></div>');
+        var attrs = ' data-kind="' + esc(r.kind) + '" data-email="' + esc(r.email) + '"';
+        if (r.id !== undefined) attrs += ' data-id="' + esc(r.id) + '"';
+        rows.push(
+          '<label class="badge-addr-row">' +
+            '<input type="checkbox" class="badge-addr-check" checked' + attrs + '>' +
+            '<span class="badge-addr-role ' + roleClass + '">' + esc(roleLabel) + '</span>' +
+            '<span class="badge-addr-email">' + esc(r.email) + '</span>' +
+          '</label>'
+        );
       });
     }
     addRows(sel.to, "role-to", t("addrRoleTo"));
@@ -2621,10 +2648,10 @@
     box.innerHTML = rows.length ? rows.join("") : '<div class="badge-addr-empty">' + esc(t("noRecipientsSelectedHint")) + '</div>';
   }
 
-  // Counter shows the number of distinct addresses across To/Cc/Bcc (not
-  // just the To-checkbox count) — the same address checked as both To and
-  // Cc only counts once, matching "how many people actually get this".
-  function updateSendRecipientsBadge() {
+  // Updates only the counter's number, without touching the popover's own
+  // address-row list — used mid-interaction while the user is toggling rows
+  // inside that same popover (see suppressPopoverAddrsRerender above).
+  function updateSendRecipientsBadgeCountOnly() {
     var badge = $("#sendRecipientsBadge");
     if (!badge) return;
     var sel = computeSendSelectedAddresses();
@@ -2633,7 +2660,14 @@
       list.forEach(function (r) { seen[r.email.trim().toLowerCase()] = true; });
     });
     badge.textContent = Object.keys(seen).length;
-    renderSendRecipientsBadgeAddrs(sel);
+  }
+
+  // Counter shows the number of distinct addresses across To/Cc/Bcc (not
+  // just the To-checkbox count) — the same address checked as both To and
+  // Cc only counts once, matching "how many people actually get this".
+  function updateSendRecipientsBadge() {
+    updateSendRecipientsBadgeCountOnly();
+    if (!suppressPopoverAddrsRerender) renderSendRecipientsBadgeAddrs();
   }
 
   function renderSendRecipientsPanel() {
@@ -2788,6 +2822,55 @@
     e.stopPropagation();
     sendDeselectAllVisible();
     closeSendRecipientsBadgePopover();
+  });
+  // The popover (and this address list) live inside #sendRecipientsToggle's
+  // own DOM subtree, whose click handler toggles the whole recipients panel
+  // open/closed — exactly the reason #sendRecipientsBadge/#sendSelectAllBtn/
+  // #sendDeselectAllBtn above all stopPropagation() on click. A checkbox
+  // click (and the label click that forwards to it) is no different, so
+  // without this the same click that toggles one address row would also
+  // bubble up and instantly close the whole "Select recipients" panel.
+  $("#sendRecipientsBadgeAddrs").addEventListener("click", function (e) {
+    e.stopPropagation();
+  });
+  // Item 101: checking/unchecking a single address row inside the counter
+  // popover adds/removes just that one address from its role (To-contact,
+  // To-typed, Cc or Bcc) — without closing the popover or re-rendering its
+  // row list, so the user can freely add a checkmark back after removing it,
+  // all within the same popover-open session ("только этот адрес").
+  $("#sendRecipientsBadgeAddrs").addEventListener("change", function (e) {
+    var cb = e.target;
+    if (!cb || cb.tagName !== "INPUT" || cb.type !== "checkbox") return;
+    var kind = cb.dataset.kind;
+    var email = cb.dataset.email;
+    var letterId = $("#letterSelect").value;
+    if (!letterId || !state.composeRecipients) return;
+    suppressPopoverAddrsRerender = true;
+    try {
+      if (kind === "to-contact") {
+        var id = cb.dataset.id;
+        var ids = state.composeRecipients.contactIds.slice();
+        if (cb.checked) {
+          if (ids.indexOf(id) === -1) ids.push(id);
+        } else {
+          ids = ids.filter(function (x) { return x !== id; });
+        }
+        setSendToState(letterId, { contactIds: ids });
+      } else if (kind === "to-extra") {
+        var newExtra = toggleAddressInField("sendExtraEmails", email, cb.checked);
+        setSendToState(letterId, { extraEmails: newExtra });
+      } else if (kind === "cc" || kind === "bcc") {
+        var inputId = kind === "cc" ? "sendCc" : "sendBcc";
+        var newVal = toggleAddressInField(inputId, email, cb.checked);
+        var patch = {};
+        patch[kind] = newVal;
+        saveLetterField(letterId, patch);
+      }
+      renderSendRecipientChecklistRows();
+    } finally {
+      suppressPopoverAddrsRerender = false;
+    }
+    updateSendRecipientsBadgeCountOnly();
   });
   document.addEventListener("click", function (e) {
     var tplPop = $("#tplRecipientsBadgePopover");
