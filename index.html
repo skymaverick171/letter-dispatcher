@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Letter Dispatcher</title>
@@ -243,7 +244,7 @@
     letter-spacing: 0.04em;
     margin-bottom: 5px;
   }
-  input[type="text"], input[type="email"], input[type="search"], textarea, select {
+  input[type="text"], input[type="email"], input[type="search"], input[type="tel"], textarea, select {
     width: 100%;
     font: inherit;
     color: var(--ink);
@@ -776,6 +777,16 @@
     border-radius: 8px;
     padding: 4px 12px;
   }
+  /* Address book list: same capped-height scroll box as the Recipients
+     checklists above, sized by capChecklistToVisibleRows() at render time. */
+  #contactList.list-scroll-box {
+    max-height: none;
+    overflow-y: auto;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 12px;
+  }
   .contact-check { flex-wrap: wrap; }
   .contact-check label { display: flex; flex-direction: column; gap: 2px; }
   .contact-check .name-line { display: flex; align-items: center; }
@@ -846,6 +857,7 @@
 </style>
 </head>
 <body>
+
 
 <div class="stripe"></div>
 <div class="shell">
@@ -1062,6 +1074,10 @@
             <datalist id="groupOptions"></datalist>
           </div>
         </div>
+        <div style="margin-top:12px;">
+          <label class="field" data-i18n="fieldPhone">Phone</label>
+          <input type="tel" id="newContactPhone" placeholder="+1 555 123 4567" data-i18n-ph="phonePlaceholder">
+        </div>
         <div class="row" style="margin-top:12px;">
           <button class="btn primary" id="addContactBtn" data-i18n="addContactBtn">Add contact</button>
           <button class="btn ghost" id="cancelContactEdit" hidden data-i18n="cancelEditBtn">Cancel editing</button>
@@ -1089,7 +1105,7 @@
         </div>
       </div>
       <div class="panel-body">
-        <ul class="list" id="contactList"></ul>
+        <ul class="list list-scroll-box" id="contactList"></ul>
       </div>
     </div>
 
@@ -1453,6 +1469,9 @@
       officePlaceholder: "123 Main St, Springfield",
       fieldGroup: "Group",
       groupPlaceholder: "e.g. Sales",
+      fieldPhone: "Phone",
+      phonePlaceholder: "+1 555 123 4567",
+      callBtnLabel: "Call",
       allGroupsOption: "All groups",
       allOfficesOption: "All offices",
       filterBtn: "Filter",
@@ -1488,7 +1507,7 @@
       downloadCsvBtn: "Download CSV",
       emptyContactsMsg: "No contacts yet — add your first one above.",
       importTitle: "Import from Google Sheets",
-      importHint: "Select the \"Name\" and \"Email\" columns in your Google Sheet (add \"Office\" and \"Group\" columns too, if you like), copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV).",
+      importHint: "Select the \"Name\" and \"Email\" columns in your Google Sheet (add \"Office\", \"Group\" and \"Phone\" columns too, if you like), copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV).",
       importPastePlaceholder: "Jane Doe\tjane@example.com\nJohn Smith\tjohn@example.com",
       importPasteBtn: "Import pasted rows",
       chooseCsvBtn: "Choose CSV file…",
@@ -1626,6 +1645,9 @@
       officePlaceholder: "10 rue de la Paix, Paris",
       fieldGroup: "Groupe",
       groupPlaceholder: "ex. Ventes",
+      fieldPhone: "Téléphone",
+      phonePlaceholder: "+33 1 23 45 67 89",
+      callBtnLabel: "Appeler",
       allGroupsOption: "Tous les groupes",
       allOfficesOption: "Tous les bureaux",
       filterBtn: "Filtrer",
@@ -1661,7 +1683,7 @@
       downloadCsvBtn: "Télécharger le CSV",
       emptyContactsMsg: "Pas encore de contacts — ajoutez-en un ci-dessus.",
       importTitle: "Importer depuis Google Sheets",
-      importHint: "Sélectionnez les colonnes « Nom » et « Email » dans votre Google Sheet (ajoutez aussi « Office » et « Group » si vous le souhaitez), copiez (Ctrl/Cmd+C) et collez ici — ou importez un fichier CSV exporté de la feuille (Fichier → Télécharger → CSV).",
+      importHint: "Sélectionnez les colonnes « Nom » et « Email » dans votre Google Sheet (ajoutez aussi « Office », « Group » et « Phone » si vous le souhaitez), copiez (Ctrl/Cmd+C) et collez ici — ou importez un fichier CSV exporté de la feuille (Fichier → Télécharger → CSV).",
       importPastePlaceholder: "Claire Dubois\tclaire@example.com\nMarc Lefèvre\tmarc@example.com",
       importPasteBtn: "Importer les lignes collées",
       chooseCsvBtn: "Choisir un fichier CSV…",
@@ -1728,8 +1750,8 @@
   };
 
   var LOCAL_CONTACTS = [
-    { id: "local-c1", name: "Jane Doe (example)", email: "jane.doe@example.com", office: "500 Market St, San Francisco", group: "Sales" },
-    { id: "local-c2", name: "John Smith (example)", email: "john.smith@example.com", office: "12 rue de Rivoli, Paris", group: "Support" }
+    { id: "local-c1", name: "Jane Doe (example)", email: "jane.doe@example.com", office: "500 Market St, San Francisco", group: "Sales", phone: "+1 415 555 0101" },
+    { id: "local-c2", name: "John Smith (example)", email: "john.smith@example.com", office: "12 rue de Rivoli, Paris", group: "Support", phone: "+33 1 42 60 12 34" }
   ];
   var LOCAL_LETTERS = [
     {
@@ -1797,6 +1819,13 @@
       btn.classList.add("active");
       $all(".view").forEach(function (v) { v.classList.remove("active"); });
       $("#view-" + btn.dataset.tab).classList.add("active");
+      // #contactList can be rendered while the Contacts tab is hidden
+      // (display:none), where every row measures 0 height — re-measure the
+      // scroll cap now that it's actually visible, same as the Recipients
+      // panels do when they open.
+      if (btn.dataset.tab === "contacts") {
+        capChecklistToVisibleRows($("#contactList"), 5, "li");
+      }
     });
   });
 
@@ -2282,13 +2311,16 @@
             '<div class="title">' + esc(c.name) + groupTagHtml(c.group) + '</div>' +
             '<div class="sub">' + esc(c.email) + '</div>' +
             (c.office ? '<div class="sub">' + esc(c.office) + '</div>' : '') +
+            (c.phone ? '<div class="sub">' + esc(c.phone) + '</div>' : '') +
           '</div>' +
           '<div class="item-actions">' +
+          (c.phone ? '<button class="btn ghost" data-call-contact="' + esc(c.phone.replace(/[^\d+]/g, "")) + '" title="' + esc(t("callBtnLabel")) + '">📞</button>' : '') +
           '<button class="btn ghost" data-edit-contact="' + esc(c.id) + '">✎</button>' +
           '<button class="btn ghost" data-del-contact="' + esc(c.id) + '">✕</button>' +
           '</div></li>';
       }).join("");
     }
+    capChecklistToVisibleRows($("#contactList"), 5, "li");
     $all("[data-del-contact]").forEach(function (b) {
       b.addEventListener("click", function () {
         var id = b.dataset.delContact;
@@ -2311,6 +2343,15 @@
         if (c) loadContactIntoEditor(c);
       });
     });
+    // tel: links open the device's default phone/calling app when one is
+    // registered to handle them (the native dialer on a phone; whatever app
+    // — Skype, FaceTime, etc. — claims tel: links on desktop); if nothing
+    // claims tel:, the browser itself reports that rather than this page.
+    $all("[data-call-contact]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        window.location.href = "tel:" + b.dataset.callContact;
+      });
+    });
     renderGroupColorsPopover();
     renderLetterRecipientChecklist();
     renderSendRecipientsPanel();
@@ -2322,6 +2363,7 @@
     $("#newContactEmail").value = c.email || "";
     $("#newContactOffice").value = c.office || "";
     $("#newContactGroup").value = c.group || "";
+    $("#newContactPhone").value = c.phone || "";
     $("#contactFormTitle").textContent = t("editContactTitle");
     $("#cancelContactEdit").hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2334,6 +2376,7 @@
     $("#newContactEmail").value = "";
     $("#newContactOffice").value = "";
     $("#newContactGroup").value = "";
+    $("#newContactPhone").value = "";
     $("#contactFormTitle").textContent = t("newContactTitle");
     $("#cancelContactEdit").hidden = true;
     state.contactFormBaseline = currentContactFormValues();
@@ -2347,14 +2390,15 @@
       name: $("#newContactName").value,
       email: $("#newContactEmail").value,
       office: $("#newContactOffice").value,
-      group: $("#newContactGroup").value
+      group: $("#newContactGroup").value,
+      phone: $("#newContactPhone").value
     };
   }
   function contactFormHasUnsavedChanges() {
     var cur = currentContactFormValues();
-    var base = state.contactFormBaseline || { name: "", email: "", office: "", group: "" };
+    var base = state.contactFormBaseline || { name: "", email: "", office: "", group: "", phone: "" };
     return cur.name !== base.name || cur.email !== base.email ||
-      cur.office !== base.office || cur.group !== base.group;
+      cur.office !== base.office || cur.group !== base.group || cur.phone !== base.phone;
   }
 
   // Generic recipient checklist renderer shared by the Letters-tab editor
@@ -2691,8 +2735,8 @@
   // real (possibly multi-line) height, scrolling for the rest — instead of
   // a fixed pixel guess that would show too many or too few rows depending
   // on how much each row's text wraps.
-  function capChecklistToVisibleRows(box, visibleCount) {
-    var rows = box.querySelectorAll(".contact-check");
+  function capChecklistToVisibleRows(box, visibleCount, rowSelector) {
+    var rows = box.querySelectorAll(rowSelector || ".contact-check");
     if (rows.length <= visibleCount) {
       box.style.maxHeight = "";
       return;
@@ -2961,8 +3005,8 @@
     return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
   function contactsToDelimited(sep) {
-    var rows = [[t("fieldName"), "Email", t("fieldOffice"), t("fieldGroup")]].concat(
-      state.contacts.map(function (c) { return [c.name, c.email, c.office || "", c.group || ""]; })
+    var rows = [[t("fieldName"), "Email", t("fieldOffice"), t("fieldGroup"), t("fieldPhone")]].concat(
+      state.contacts.map(function (c) { return [c.name, c.email, c.office || "", c.group || "", c.phone || ""]; })
     );
     if (sep === "\t") return rows.map(function (r) { return r.join("\t"); }).join("\n");
     return rows.map(function (r) { return r.map(csvEscape).join(","); }).join("\r\n");
@@ -3104,8 +3148,9 @@
       var email = (r[1] || "").trim();
       var office = (r[2] || "").trim();
       var group = (r[3] || "").trim();
+      var phone = (r[4] || "").trim();
       if (name && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        out.push({ name: name, email: email, office: office, group: group });
+        out.push({ name: name, email: email, office: office, group: group, phone: phone });
       }
     });
     return out;
@@ -3237,12 +3282,13 @@
     var email = $("#newContactEmail").value.trim();
     var office = $("#newContactOffice").value.trim();
     var group = $("#newContactGroup").value.trim();
+    var phone = $("#newContactPhone").value.trim();
     var msg = $("#contactFormMsg");
     if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       msg.innerHTML = '<div class="status-msg warn">' + esc(t("nameEmailWarn")) + '</div>';
       return;
     }
-    saveContact(state.editingContactId, { name: name, email: email, office: office, group: group });
+    saveContact(state.editingContactId, { name: name, email: email, office: office, group: group, phone: phone });
     resetContactForm();
     msg.innerHTML = '';
   });
