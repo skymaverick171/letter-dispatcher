@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-
-
+<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Letter Dispatcher</title>
@@ -147,10 +143,36 @@
     top: 0;
     right: 0;
   }
-  .lang-corner button {
-    padding: 3px 7px !important;
-    font-size: 10px !important;
+  .lang-menu-btn {
+    width: 26px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 0;
   }
+  .lang-menu-btn:hover { filter: brightness(1.05); color: var(--ink); }
+  .lang-menu-btn[aria-expanded="true"] { background: var(--surface); color: var(--ink); }
+  .lang-menu-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 40;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 6px;
+  }
+  .lang-menu-popover[hidden] { display: none; }
+  .lang-menu-popover .segmented.lang button { padding: 6px 11px; font-size: 12px; }
   header.top h1 {
     font-family: "Fraunces", Georgia, serif;
     font-weight: 600;
@@ -203,7 +225,7 @@
     border-radius: 999px;
     padding: 1px 7px;
   }
-  nav.tabs button:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  nav.tabs button:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, .chip-field:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
@@ -291,15 +313,8 @@
   button.btn.danger { color: var(--stamp); }
   button.btn.danger:hover { border-color: var(--stamp); }
   button.btn.ghost { background: transparent; border-color: transparent; padding: 6px 8px; }
+  button.btn.icon-btn { padding: 6px 9px; font-size: 16px; line-height: 1; }
   button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  #composeMakeChipBtn:not(:disabled) {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: var(--accent-soft);
-    font-weight: 600;
-  }
-  #composeMakeChipBtn:not(:disabled):hover { filter: brightness(1.08); }
-
   ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
   ul.list li {
     display: flex;
@@ -330,6 +345,77 @@
     margin-left: 6px;
     vertical-align: middle;
   }
+  .tpl-select-wrap { position: relative; }
+  .tpl-select-btn {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .tpl-select-btn:hover { filter: brightness(1.05); }
+  .tpl-select-chevron { color: var(--muted); font-size: 11px; transition: transform 0.15s ease; flex-shrink: 0; }
+  .tpl-select-btn[aria-expanded="true"] .tpl-select-chevron { transform: rotate(180deg); }
+  .tpl-select-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 6px;
+  }
+  .tpl-select-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+  .tpl-select-list li {
+    padding: 7px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13.5px;
+  }
+  .tpl-select-list li:hover { background: var(--surface-2); }
+  .tpl-select-list li.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .office-filter-wrap { position: relative; display: inline-flex; }
+  .office-filter-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 40;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 12px;
+    min-width: 220px;
+  }
+  .office-filter-popover .field { margin-top: 0; margin-bottom: 5px; }
+  .office-filter-popover select {
+    width: 100%;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 13px;
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+  }
+  button.btn.icon-btn.active { background: var(--accent-soft); color: var(--accent); }
   .group-colors-wrap { position: relative; display: inline-flex; }
   .group-colors-popover {
     position: absolute;
@@ -512,19 +598,6 @@
 
   ::placeholder { color: var(--muted); opacity: 0.7; }
 
-  .num-chips {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 13px;
-    line-height: 1.9;
-    white-space: pre-wrap;
-    word-break: break-word;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    max-height: 300px;
-    overflow-y: auto;
-  }
   .num-chip {
     font: inherit;
     font-family: inherit;
@@ -541,11 +614,6 @@
     background: color-mix(in srgb, var(--good) 18%, transparent);
     color: var(--good);
     border-color: color-mix(in srgb, var(--good) 40%, transparent);
-  }
-  .num-chip.chip-custom {
-    background: color-mix(in srgb, var(--custom) 18%, transparent);
-    color: var(--custom);
-    border-color: color-mix(in srgb, var(--custom) 40%, transparent);
   }
   .tpl-recipients {
     margin-top: 18px;
@@ -589,6 +657,27 @@
     transition: transform 0.15s ease;
   }
   .tpl-recip-toggle[aria-expanded="true"] .tpl-recip-chevron { transform: rotate(180deg); }
+  .sheets-collapse-head { cursor: pointer; user-select: none; }
+  .panel .panel-head.sheets-collapse-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sheets-collapse-sep { color: var(--muted); font-weight: 400; }
+  .sheets-collapse-chevron {
+    color: var(--muted);
+    font-size: 13px;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .sheets-collapse-head[aria-expanded="true"] .sheets-collapse-chevron { transform: rotate(180deg); }
   .badge-wrap { position: relative; display: inline-flex; }
   .badge-btn {
     border: none;
@@ -777,9 +866,10 @@
     border-radius: 8px;
     padding: 4px 12px;
   }
-  /* Address book list: same capped-height scroll box as the Recipients
-     checklists above, sized by capChecklistToVisibleRows() at render time. */
-  #contactList.list-scroll-box {
+  /* Address book / Ready-made letters lists: same capped-height scroll box
+     as the Recipients checklists above, sized by capChecklistToVisibleRows()
+     at render time. */
+  #contactList.list-scroll-box, #letterList.list-scroll-box {
     max-height: none;
     overflow-y: auto;
     background: var(--surface-2);
@@ -795,25 +885,38 @@
     color: var(--muted);
     padding: 2px 0;
   }
-  .num-popover {
-    position: fixed;
-    z-index: 50;
-    background: var(--surface);
+  .chip-field {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface-2);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    padding: 8px;
+    border-radius: 7px;
+    padding: 9px 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    outline: none;
+    cursor: text;
   }
-  .num-popover input {
+  .chip-field:empty::before {
+    content: attr(data-placeholder);
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  .chip-field-multiline {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 26px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-    width: auto;
-    min-width: 130px;
-    padding: 10px 14px;
-    border-radius: 8px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    min-height: 150px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .num-chip.chip-editing {
+    cursor: text;
+    font-size: 1.15em;
+    padding: 2px 7px;
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
   .install-help-overlay {
     position: fixed;
@@ -854,17 +957,22 @@
   @media (max-width: 640px) {
     .grid2 { grid-template-columns: 1fr; }
   }
-</style>
-</head>
-<body>
-
+</style></head><body>
 
 <div class="stripe"></div>
 <div class="shell">
   <header class="top">
-    <div class="segmented lang lang-corner" id="langSeg">
-      <button data-lang="en" class="on">EN</button>
-      <button data-lang="fr">FR</button>
+    <div class="lang-menu-wrap lang-corner" id="langMenuWrap">
+      <button type="button" class="lang-menu-btn" id="langMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Language" data-i18n-title="languageMenuLabel">
+        <span aria-hidden="true">⋯</span>
+      </button>
+      <div class="lang-menu-popover" id="langMenuPopover" hidden>
+        <div class="segmented lang" id="langSeg">
+          <button data-lang="en" class="on">EN</button>
+          <button data-lang="fr">FR</button>
+          <button data-lang="es">ES</button>
+        </div>
+      </div>
     </div>
     <div>
       <h1 data-i18n="appTitle">Letter Dispatcher</h1>
@@ -886,28 +994,28 @@
         <div class="grid-form">
           <div>
             <label class="field" data-i18n="fieldTemplate">Template</label>
-            <select id="letterSelect">
+            <select id="letterSelect" hidden>
               <option value="">— select a letter —</option>
             </select>
+            <div class="tpl-select-wrap" id="letterSelectWrap">
+              <button type="button" class="tpl-select-btn" id="letterSelectBtn" aria-haspopup="listbox" aria-expanded="false">
+                <span id="letterSelectLabel" data-i18n="selectLetterOption">— select a letter —</span>
+                <span class="tpl-select-chevron" aria-hidden="true">▾</span>
+              </button>
+              <div class="tpl-select-popover" id="letterSelectPopover" hidden role="listbox">
+                <ul class="tpl-select-list" id="letterSelectList"></ul>
+              </div>
+            </div>
           </div>
           <div>
             <label class="field" data-i18n="fieldSubject">Subject</label>
-            <input type="text" id="composeSubject" placeholder="Letter subject" data-i18n-ph="subjectPlaceholder">
-            <div class="num-chips-wrap" id="composeSubjectChipsWrap" hidden>
-              <p class="hint" data-i18n="composeChipsHint" style="margin:10px 0 6px;">Tap a number or the name placeholder to edit it on its own — handy on phones and tablets.</p>
-              <div class="num-chips" id="composeSubjectChips"></div>
-            </div>
+            <input type="text" id="composeSubject" placeholder="Letter subject" data-i18n-ph="subjectPlaceholder" hidden>
+            <div class="chip-field" id="composeSubjectField" contenteditable="true" role="textbox" aria-multiline="false" data-i18n-ph="subjectPlaceholder"></div>
           </div>
           <div>
             <label class="field" data-i18n="fieldBody">Letter text</label>
-            <textarea id="composeBody" rows="7" placeholder="Letter text" data-i18n-ph="bodyPlaceholder"></textarea>
-            <div class="row" style="margin-top:8px;">
-              <button type="button" class="btn ghost" id="composeMakeChipBtn" disabled data-i18n="makeChipBtn">Turn selection into a chip</button>
-            </div>
-            <div class="num-chips-wrap" id="composeNumberChipsWrap" hidden>
-              <p class="hint" data-i18n="composeChipsHint" style="margin:10px 0 6px;">Tap a number or the name placeholder to edit it on its own — handy on phones and tablets.</p>
-              <div class="num-chips" id="composeNumberChips"></div>
-            </div>
+            <textarea id="composeBody" rows="7" placeholder="Letter text" data-i18n-ph="bodyPlaceholder" hidden></textarea>
+            <div class="chip-field chip-field-multiline" id="composeBodyField" contenteditable="true" role="textbox" aria-multiline="true" data-i18n-ph="bodyPlaceholder"></div>
           </div>
         </div>
       </div>
@@ -988,13 +1096,18 @@
     <div class="panel">
       <div class="panel-head"><h2 data-i18n="step3Title">3. Send via</h2></div>
       <div class="panel-body">
-        <label class="field" data-i18n="fieldPreview">Preview</label>
-        <div class="preview">
-          <div class="p-to" id="previewTo">—</div>
-          <div class="p-to" id="previewCc" hidden></div>
-          <div class="p-to" id="previewBcc" hidden></div>
-          <div class="p-subject" id="previewSubject">—</div>
-          <div class="p-body" id="previewBody">—</div>
+        <div class="tpl-recip-toggle" id="sendPreviewToggle" role="button" tabindex="0" aria-expanded="false" aria-controls="sendPreviewBody">
+          <span class="tpl-recip-toggle-label" data-i18n="fieldPreview">Preview</span>
+          <span class="tpl-recip-chevron" aria-hidden="true">▾</span>
+        </div>
+        <div class="tpl-recip-body" id="sendPreviewBody" hidden>
+          <div class="preview">
+            <div class="p-to" id="previewTo">—</div>
+            <div class="p-to" id="previewCc" hidden></div>
+            <div class="p-to" id="previewBcc" hidden></div>
+            <div class="p-subject" id="previewSubject">—</div>
+            <div class="p-body" id="previewBody">—</div>
+          </div>
         </div>
 
         <div style="margin-top:16px;">
@@ -1093,15 +1206,22 @@
           <select id="groupFilter" class="group-filter">
             <option value="">All groups</option>
           </select>
+          <div class="office-filter-wrap">
+            <button class="btn ghost icon-btn" id="officeFilterBtn" type="button" aria-haspopup="true" aria-expanded="false" data-i18n-title="officeFilterLabel" title="Filter by office">🏢</button>
+            <div class="office-filter-popover" id="officeFilterPopover" hidden>
+              <label class="field" data-i18n="fieldOffice">Office address</label>
+              <select id="officeFilter">
+                <option value="">All offices</option>
+              </select>
+            </div>
+          </div>
           <div class="group-colors-wrap">
-            <button class="btn ghost" id="groupColorsBtn" type="button" aria-haspopup="true" aria-expanded="false" data-i18n="groupColorsBtn">🎨 Group colors</button>
+            <button class="btn ghost icon-btn" id="groupColorsBtn" type="button" aria-haspopup="true" aria-expanded="false" data-i18n-title="groupColorsBtn" title="Group colors" aria-label="Group colors">🎨</button>
             <div class="group-colors-popover" id="groupColorsPopover" hidden>
               <h3 data-i18n="groupColorsTitle">Group colors</h3>
               <div id="groupColorsList"></div>
             </div>
           </div>
-          <button class="btn" id="showCopyBtn" data-i18n="copyForSheetsBtn">Copy for Google Sheets</button>
-          <button class="btn" id="downloadCsvBtn" data-i18n="downloadCsvBtn">Download CSV</button>
         </div>
       </div>
       <div class="panel-body">
@@ -1110,16 +1230,36 @@
     </div>
 
     <div class="panel">
-      <div class="panel-head"><h2 data-i18n="importTitle">Import from Google Sheets</h2></div>
-      <div class="panel-body">
-        <p class="hint" style="margin:0 0 10px;" data-i18n="importHint">Select the "Name" and "Email" columns in your Google Sheet, copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV).</p>
-        <textarea id="importArea" rows="4" placeholder="Jane Doe&#9;jane@example.com&#10;John Smith&#9;john@example.com" data-i18n-ph="importPastePlaceholder"></textarea>
-        <div class="row" style="margin-top:10px;">
-          <button class="btn primary" id="importPasteBtn" data-i18n="importPasteBtn">Import pasted rows</button>
-          <label class="btn" for="importFile" style="cursor:pointer;" data-i18n="chooseCsvBtn">Choose CSV file…</label>
-          <input type="file" id="importFile" accept=".csv,text/csv" hidden>
+      <div class="panel-head sheets-collapse-head" id="contactsSheetsToggle" role="button" tabindex="0" aria-expanded="false" aria-controls="contactsSheetsCollapseBody">
+        <h2>
+          <span data-i18n="sheetsImportShort">Import</span>
+          <span class="sheets-collapse-sep" aria-hidden="true">/</span>
+          <span data-i18n="sheetsExportShort">Export</span>
+        </h2>
+        <span class="sheets-collapse-chevron" aria-hidden="true">▾</span>
+      </div>
+      <div class="panel-body" id="contactsSheetsCollapseBody" hidden>
+        <div class="segmented" id="contactsSheetsModeSeg" role="tablist" style="margin-bottom:14px;">
+          <button type="button" class="on" data-sheets-mode="import" role="tab" aria-selected="true" data-i18n="importTitle">Import from Google Sheets</button>
+          <button type="button" data-sheets-mode="export" role="tab" aria-selected="false" data-i18n="exportTitle">Export to Google Sheets</button>
         </div>
-        <div id="importMsg"></div>
+        <div id="contactsSheetsImportBody">
+          <p class="hint" style="margin:0 0 10px;" data-i18n="importHint">Select the "Name" and "Email" columns in your Google Sheet, copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV).</p>
+          <textarea id="importArea" rows="4" placeholder="Jane Doe&#9;jane@example.com&#10;John Smith&#9;john@example.com" data-i18n-ph="importPastePlaceholder"></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn primary" id="importPasteBtn" data-i18n="importPasteBtn">Import pasted rows</button>
+            <label class="btn" for="importFile" style="cursor:pointer;" data-i18n="chooseCsvBtn">Choose CSV file…</label>
+            <input type="file" id="importFile" accept=".csv,text/csv" hidden>
+          </div>
+          <div id="importMsg"></div>
+        </div>
+        <div id="contactsSheetsExportBody" hidden>
+          <p class="hint" style="margin:0 0 10px;" data-i18n="exportHint">Copy your address book as text to paste into a Google Sheet, or download it as a CSV file.</p>
+          <div class="row">
+            <button class="btn" id="showCopyBtn" data-i18n="copyForSheetsBtn">Copy for Google Sheets</button>
+            <button class="btn" id="downloadCsvBtn" data-i18n="downloadCsvBtn">Download CSV</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1169,20 +1309,14 @@
         <div class="grid-form">
           <div>
             <label class="field" data-i18n="fieldLetterSubject">Subject</label>
-            <input type="text" id="newLetterSubject" placeholder="Payment reminder" data-i18n-ph="letterSubjectPlaceholder">
-            <div class="num-chips-wrap" id="letterSubjectChipsWrap" hidden>
-              <p class="hint" data-i18n="numberChipsHint" style="margin:10px 0 6px;">Tap a number to edit it on its own — handy on phones and tablets.</p>
-              <div class="num-chips" id="letterSubjectChips"></div>
-            </div>
+            <input type="text" id="newLetterSubject" placeholder="Payment reminder" data-i18n-ph="letterSubjectPlaceholder" hidden>
+            <div class="chip-field" id="newLetterSubjectField" contenteditable="true" role="textbox" aria-multiline="false" data-i18n-ph="letterSubjectPlaceholder"></div>
           </div>
           <div>
             <label class="field" data-i18n="fieldLetterBody">Text</label>
-            <textarea id="newLetterBody" rows="6" placeholder="Hello, {{name}}!" data-i18n-ph="letterBodyPlaceholder"></textarea>
+            <textarea id="newLetterBody" rows="6" placeholder="Hello, {{name}}!" data-i18n-ph="letterBodyPlaceholder" hidden></textarea>
+            <div class="chip-field chip-field-multiline" id="newLetterBodyField" contenteditable="true" role="textbox" aria-multiline="true" data-i18n-ph="letterBodyPlaceholder"></div>
             <p class="hint" data-i18n-vars="letterHint">Placeholders: <code class="ph">{{name}}</code>, <code class="ph">{{email}}</code> — replaced when sending personalized letters</p>
-            <div class="num-chips-wrap" id="letterNumberChipsWrap" hidden>
-              <p class="hint" data-i18n="numberChipsHint" style="margin:10px 0 6px;">Tap a number to edit it on its own — handy on phones and tablets.</p>
-              <div class="num-chips" id="letterNumberChips"></div>
-            </div>
           </div>
         </div>
 
@@ -1259,27 +1393,43 @@
     <div class="panel">
       <div class="panel-head">
         <h2 data-i18n="readyLettersTitle">Ready-made letters</h2>
-        <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap;">
-          <button class="btn" id="showCopyLettersBtn" data-i18n="copyForSheetsBtn">Copy for Google Sheets</button>
-          <button class="btn" id="downloadLettersCsvBtn" data-i18n="downloadCsvBtn">Download CSV</button>
-        </div>
       </div>
       <div class="panel-body">
-        <ul class="list" id="letterList"></ul>
+        <ul class="list list-scroll-box" id="letterList"></ul>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-head"><h2 data-i18n="importLettersTitle">Import from Google Sheets</h2></div>
-      <div class="panel-body">
-        <p class="hint" style="margin:0 0 10px;" data-i18n="importLettersHint">Use columns Subject, Body, Cc, Bcc, Personalize (yes/no) in your Google Sheet, copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV). Recipients aren't included — pick them per letter after importing.</p>
-        <textarea id="importLetterArea" rows="4" placeholder="Payment reminder&#9;Hello, {{name}}!&#9;&#9;&#9;yes" data-i18n-ph="importLettersPastePlaceholder"></textarea>
-        <div class="row" style="margin-top:10px;">
-          <button class="btn primary" id="importLetterPasteBtn" data-i18n="importPasteBtn">Import pasted rows</button>
-          <label class="btn" for="importLetterFile" style="cursor:pointer;" data-i18n="chooseCsvBtn">Choose CSV file…</label>
-          <input type="file" id="importLetterFile" accept=".csv,text/csv" hidden>
+      <div class="panel-head sheets-collapse-head" id="lettersSheetsToggle" role="button" tabindex="0" aria-expanded="false" aria-controls="lettersSheetsCollapseBody">
+        <h2>
+          <span data-i18n="sheetsImportShort">Import</span>
+          <span class="sheets-collapse-sep" aria-hidden="true">/</span>
+          <span data-i18n="sheetsExportShort">Export</span>
+        </h2>
+        <span class="sheets-collapse-chevron" aria-hidden="true">▾</span>
+      </div>
+      <div class="panel-body" id="lettersSheetsCollapseBody" hidden>
+        <div class="segmented" id="lettersSheetsModeSeg" role="tablist" style="margin-bottom:14px;">
+          <button type="button" class="on" data-sheets-mode="import" role="tab" aria-selected="true" data-i18n="importLettersTitle">Import from Google Sheets</button>
+          <button type="button" data-sheets-mode="export" role="tab" aria-selected="false" data-i18n="exportLettersTitle">Export to Google Sheets</button>
         </div>
-        <div id="importLetterMsg"></div>
+        <div id="lettersSheetsImportBody">
+          <p class="hint" style="margin:0 0 10px;" data-i18n="importLettersHint">Use columns Subject, Body, Cc, Bcc, Personalize (yes/no) in your Google Sheet, copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV). Recipients aren't included — pick them per letter after importing.</p>
+          <textarea id="importLetterArea" rows="4" placeholder="Payment reminder&#9;Hello, {{name}}!&#9;&#9;&#9;yes" data-i18n-ph="importLettersPastePlaceholder"></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button class="btn primary" id="importLetterPasteBtn" data-i18n="importPasteBtn">Import pasted rows</button>
+            <label class="btn" for="importLetterFile" style="cursor:pointer;" data-i18n="chooseCsvBtn">Choose CSV file…</label>
+            <input type="file" id="importLetterFile" accept=".csv,text/csv" hidden>
+          </div>
+          <div id="importLetterMsg"></div>
+        </div>
+        <div id="lettersSheetsExportBody" hidden>
+          <p class="hint" style="margin:0 0 10px;" data-i18n="exportLettersHint">Copy your letters as text to paste into a Google Sheet, or download them as a CSV file.</p>
+          <div class="row">
+            <button class="btn" id="showCopyLettersBtn" data-i18n="copyForSheetsBtn">Copy for Google Sheets</button>
+            <button class="btn" id="downloadLettersCsvBtn" data-i18n="downloadCsvBtn">Download CSV</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1291,7 +1441,7 @@
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="installAppPanel">
       <div class="panel-head"><h2 data-i18n="installPanelTitle">Install as an app</h2></div>
       <div class="panel-body" style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
         <p class="hint" style="margin:0; max-width:38ch;" data-i18n="installPanelHint">Puts an icon on your desktop or phone's home screen, opening in its own window.</p>
@@ -1302,10 +1452,6 @@
       </div>
     </div>
   </section>
-</div>
-
-<div id="numEditPopover" class="num-popover" hidden>
-  <input id="numEditInput" type="tel" inputmode="tel" autocomplete="off">
 </div>
 
 <div class="install-help-overlay" id="installHelpOverlay" hidden>
@@ -1341,6 +1487,10 @@
     sendRecipientsOpen: false,
     sendFilterOffice: "",
     sendFilterGroup: "",
+    addressFilterOffice: "",
+    contactsSheetsOpen: false,
+    lettersSheetsOpen: false,
+    sendPreviewOpen: false,
     composeRecipients: null,
     composeLetterId: null,
     // Session-only "To" selection (checked contacts + free-typed extra
@@ -1420,8 +1570,6 @@
       subjectPlaceholder: "Letter subject",
       fieldBody: "Letter text",
       bodyPlaceholder: "Letter text",
-      composeChipsHint: "Tap a number or the name placeholder to edit it on its own — handy on phones and tablets.",
-      makeChipBtn: "Turn selection into a chip",
       step2Title: "2. Recipients for this letter",
       contactSearchPlaceholder: "Search by name, email, office, or group…",
       noContactsMsg: "Add contacts in the Contacts tab",
@@ -1486,10 +1634,11 @@
       addrRoleBcc: "Bcc",
       noRecipientsSelectedHint: "No recipients selected yet.",
       groupFilterLabel: "Filter by group",
+      officeFilterLabel: "Filter by office",
       addContactBtn: "Save contact",
       nameEmailWarn: "Enter a name and a valid email.",
       addressBookTitle: "Address book",
-      groupColorsBtn: "🎨 Group colors",
+      groupColorsBtn: "Group colors",
       groupColorsTitle: "Group colors",
       groupColorsEmptyMsg: "Add a Group to a contact first, then it will show up here.",
       renameGroupBtn: "Rename group",
@@ -1510,7 +1659,11 @@
       downloadCsvBtn: "Download CSV",
       emptyContactsMsg: "No contacts yet — add your first one above.",
       importTitle: "Import from Google Sheets",
+      exportTitle: "Export to Google Sheets",
+      sheetsImportShort: "Import",
+      sheetsExportShort: "Export",
       importHint: "Select the \"Name\" and \"Email\" columns in your Google Sheet (add \"Office\", \"Group\" and \"Phone\" columns too, if you like), copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV).",
+      exportHint: "Copy your address book as text to paste into a Google Sheet, or download it as a CSV file.",
       importPastePlaceholder: "Jane Doe\tjane@example.com\nJohn Smith\tjohn@example.com",
       importPasteBtn: "Import pasted rows",
       chooseCsvBtn: "Choose CSV file…",
@@ -1535,7 +1688,9 @@
       copyPanelTitle: "Copy and paste into Google Sheets",
       copyPanelHint: "The text was copied to your clipboard (if your browser allowed it) — just paste (Ctrl/Cmd+V) into cell A1 of your Google Sheet, columns will split automatically. If copying didn't work, select the text above manually.",
       importLettersTitle: "Import from Google Sheets",
+      exportLettersTitle: "Export to Google Sheets",
       importLettersHint: "Use columns Subject, Body, Cc, Bcc, Personalize (yes/no) in your Google Sheet, copy (Ctrl/Cmd+C) and paste here — or upload a CSV file exported from the sheet (File → Download → CSV). Recipients aren't included — pick them per letter after importing.",
+      exportLettersHint: "Copy your letters as text to paste into a Google Sheet, or download them as a CSV file.",
       importLettersPastePlaceholder: "Payment reminder\tHello, {{name}}!\t\t\tyes",
       importedLettersMsg: "Letters added: {n}.",
       importFailedLettersMsg: "Couldn't recognize any rows in the form \"Subject, Body\".",
@@ -1547,7 +1702,6 @@
       fieldLetterBody: "Text",
       letterBodyPlaceholder: "Hello, {{name}}!",
       letterHint: "Placeholders: {{name}}, {{email}} — replaced when sending personalized letters",
-      numberChipsHint: "Tap a number to edit it on its own — handy on phones and tablets.",
       templateRecipientsTitle: "Recipients for this letter",
       selectRecipientsToggle: "Select recipients",
       saveLetterBtn: "Save letter",
@@ -1573,6 +1727,7 @@
       sheetsPulledAddedMsg: "Added from sheet: {n}.",
       sheetsPulledUpdatedMsg: "Updated from sheet: {n}.",
       sheetsErrorMsg: "Error: {n}",
+      languageMenuLabel: "Language",
     },
     fr: {
       appTitle: "Expéditeur de lettres",
@@ -1599,8 +1754,6 @@
       subjectPlaceholder: "Objet de la lettre",
       fieldBody: "Texte de la lettre",
       bodyPlaceholder: "Texte de la lettre",
-      composeChipsHint: "Touchez un nombre ou le nom du destinataire pour le modifier séparément — pratique sur téléphone ou tablette.",
-      makeChipBtn: "Transformer la sélection en plaquette",
       step2Title: "2. Destinataires de cette lettre",
       contactSearchPlaceholder: "Rechercher par nom, email, bureau ou groupe…",
       noContactsMsg: "Ajoutez des contacts dans l'onglet Contacts",
@@ -1665,10 +1818,11 @@
       addrRoleBcc: "Cci",
       noRecipientsSelectedHint: "Aucun destinataire sélectionné pour l'instant.",
       groupFilterLabel: "Filtrer par groupe",
+      officeFilterLabel: "Filtrer par bureau",
       addContactBtn: "Enregistrer le contact",
       nameEmailWarn: "Indiquez un nom et un email valide.",
       addressBookTitle: "Carnet d'adresses",
-      groupColorsBtn: "🎨 Couleurs des groupes",
+      groupColorsBtn: "Couleurs des groupes",
       groupColorsTitle: "Couleurs des groupes",
       groupColorsEmptyMsg: "Ajoutez d'abord un groupe à un contact ; il apparaîtra ensuite ici.",
       renameGroupBtn: "Renommer le groupe",
@@ -1689,7 +1843,11 @@
       downloadCsvBtn: "Télécharger le CSV",
       emptyContactsMsg: "Pas encore de contacts — ajoutez-en un ci-dessus.",
       importTitle: "Importer depuis Google Sheets",
+      exportTitle: "Exporter vers Google Sheets",
+      sheetsImportShort: "Importer",
+      sheetsExportShort: "Exporter",
       importHint: "Sélectionnez les colonnes « Nom » et « Email » dans votre Google Sheet (ajoutez aussi « Office », « Group » et « Phone » si vous le souhaitez), copiez (Ctrl/Cmd+C) et collez ici — ou importez un fichier CSV exporté de la feuille (Fichier → Télécharger → CSV).",
+      exportHint: "Copiez votre carnet d'adresses sous forme de texte à coller dans une feuille Google Sheets, ou téléchargez-le au format CSV.",
       importPastePlaceholder: "Claire Dubois\tclaire@example.com\nMarc Lefèvre\tmarc@example.com",
       importPasteBtn: "Importer les lignes collées",
       chooseCsvBtn: "Choisir un fichier CSV…",
@@ -1714,7 +1872,9 @@
       copyPanelTitle: "Copiez et collez dans Google Sheets",
       copyPanelHint: "Le texte a été copié dans le presse-papiers (si le navigateur l'a autorisé) — collez-le (Ctrl/Cmd+V) dans la cellule A1 de votre Google Sheet, les colonnes se répartiront automatiquement. Si la copie n'a pas fonctionné, sélectionnez le texte ci-dessus manuellement.",
       importLettersTitle: "Importer depuis Google Sheets",
+      exportLettersTitle: "Exporter vers Google Sheets",
       importLettersHint: "Utilisez les colonnes Subject, Body, Cc, Bcc, Personalize (yes/no) dans votre Google Sheet, copiez (Ctrl/Cmd+C) et collez ici — ou importez un fichier CSV exporté depuis la feuille (Fichier → Télécharger → CSV). Les destinataires ne sont pas inclus — choisissez-les pour chaque lettre après l'import.",
+      exportLettersHint: "Copiez vos lettres sous forme de texte à coller dans une feuille Google Sheets, ou téléchargez-les au format CSV.",
       importLettersPastePlaceholder: "Rappel de paiement\tBonjour, {{name}} !\t\t\tyes",
       importedLettersMsg: "Lettres ajoutées : {n}.",
       importFailedLettersMsg: "Aucune ligne du type « Subject, Body » n'a été reconnue.",
@@ -1726,7 +1886,6 @@
       fieldLetterBody: "Texte",
       letterBodyPlaceholder: "Bonjour, {{nom}}!",
       letterHint: "Variables : {{nom}}, {{email}} — remplacées lors de l'envoi personnalisé",
-      numberChipsHint: "Touchez un nombre pour le modifier séparément — pratique sur téléphone ou tablette.",
       templateRecipientsTitle: "Destinataires de cette lettre",
       selectRecipientsToggle: "Choisir les destinataires",
       saveLetterBtn: "Enregistrer la lettre",
@@ -1752,6 +1911,191 @@
       sheetsPulledAddedMsg: "Ajoutés depuis la feuille : {n}.",
       sheetsPulledUpdatedMsg: "Mis à jour depuis la feuille : {n}.",
       sheetsErrorMsg: "Erreur : {n}",
+      languageMenuLabel: "Langue",
+    },
+    es: {
+      appTitle: "Despachador de cartas",
+      appSubtitle: "Libreta de direcciones, cartas predefinidas y envío con un clic mediante Gmail u Outlook",
+      installPanelTitle: "Instalar como aplicación",
+      installPanelHint: "Coloca un icono en tu escritorio o en la pantalla de inicio del teléfono, que se abre en su propia ventana.",
+      installAppBtn: "Instalar",
+      installHelpTitle: "Cómo instalar",
+      installHelpIOS: "En Safari: toca el icono Compartir y luego «Añadir a pantalla de inicio».",
+      installHelpAndroid: "Abre el menú de Chrome (⋮) y toca «Instalar aplicación» o «Añadir a pantalla de inicio».",
+      installHelpDesktop: "Haz clic en el icono de instalación en la barra de direcciones, o abre el menú del navegador (⋮ / •••) y elige «Instalar Letter Dispatcher…».",
+      installHelpMacSafari: "En la barra de menús de Safari: Archivo → Añadir al Dock.",
+      installHelpFirefox: "Firefox aún no permite instalar esta aplicación. Guarda esta página en marcadores para un acceso rápido, o ábrela en Chrome o Edge para instalarla.",
+      installHelpInstalled: "Ya instalada — ahora mismo estás usando la versión de aplicación.",
+      installHelpGeneric: "Abre el menú de tu navegador y busca «Instalar aplicación» o «Añadir a pantalla de inicio».",
+      installHelpClose: "Entendido",
+      tabSend: "Enviar",
+      tabContacts: "Contactos",
+      tabLetters: "Cartas",
+      step1Title: "1. Asunto de la carta",
+      fieldTemplate: "Plantilla",
+      selectLetterOption: "— selecciona una carta —",
+      fieldSubject: "Asunto",
+      subjectPlaceholder: "Asunto de la carta",
+      fieldBody: "Texto de la carta",
+      bodyPlaceholder: "Texto de la carta",
+      step2Title: "2. Destinatarios de esta carta",
+      contactSearchPlaceholder: "Buscar por nombre, correo, oficina o grupo…",
+      noContactsMsg: "Añade contactos en la pestaña Contactos",
+      nothingFoundMsg: "No se encontró nada",
+      fieldExtraEmails: "Direcciones adicionales (separadas por comas)",
+      fieldCc: "Cc",
+      fieldBcc: "Cco",
+      personalizeLabel: "Personalizar — abrir una carta separada para cada destinatario",
+      step3Title: "3. Enviar mediante",
+      outlookPersonal: "Outlook Personal (outlook.com)",
+      outlookWork: "Outlook Trabajo / escuela",
+      fieldPreview: "Vista previa",
+      previewToPrefix: "Para: ",
+      previewCcPrefix: "Cc: ",
+      previewBccPrefix: "Cco: ",
+      sendBtnLabel: "Enviar",
+      mailtoBtn: "Abrir en la aplicación de correo",
+      mailClientDefault: "Aplicación de correo predeterminada",
+      mailClientOutlook: "Outlook (escritorio)",
+      mailClientSpark: "Spark",
+      mailClientAirmail: "Airmail",
+      mailAppRememberHint: "Tu elección se recuerda — Enviar seguirá usándola hasta que elijas otra aquí.",
+      mailClientOutlookHint: "«Outlook (escritorio)» solo funciona si Outlook está configurado como la aplicación de correo predeterminada de tu dispositivo — de lo contrario, se abrirá la que realmente sea la predeterminada.",
+      fieldAttachments: "Archivos adjuntos (opcional)",
+      attachAddBtn: "Añadir archivos",
+      attachEmptyHint: "No se seleccionaron archivos.",
+      attachManualHint: "Los archivos no se pueden adjuntar automáticamente — una vez que se abra tu carta, adjúntalos tú mismo.",
+      attachDownloadBtn: "Descargar",
+      attachRemoveLabel: "Quitar",
+      attachReminderMsg: "No olvides adjuntar: {files}",
+      attachConfirmTitle: "Adjunta primero tus archivos",
+      attachConfirmText: "Una vez que se abra tu aplicación de correo, deberás adjuntar estos archivos tú mismo — los navegadores no pueden hacerlo automáticamente: {files}\n\n¿No encuentras alguno? Usa el botón Descargar junto a él arriba para guardar una copia nueva en tu carpeta de descargas.",
+      attachConfirmBtn: "Continuar",
+      selectRecipientWarn: "Selecciona al menos un destinatario.",
+      selectLetterWarn: "Selecciona una carta para enviar.",
+      noLetterSelectedMsg: "Selecciona una carta para ver sus destinatarios.",
+      personalizeOnMsg: "Personalizado — se abre una carta separada para cada destinatario.",
+      personalizeOffMsg: "No personalizado — se envía un solo correo a todos juntos.",
+      openingWindowsMsg: "Abriendo {n} ventana(s) — una por destinatario. Si tu navegador bloqueó las ventanas emergentes, permítelas para esta página.",
+      openingOneMsg: "Abriendo una carta en una pestaña nueva para {n} destinatario(s).",
+      openedMailAppMsg: "Abriendo tu aplicación de correo…",
+      newContactTitle: "Nuevo contacto",
+      editContactTitle: "Editando contacto",
+      fieldName: "Nombre",
+      namePlaceholder: "Juana Pérez",
+      emailPlaceholder: "juana@ejemplo.com",
+      fieldOffice: "Dirección de la oficina",
+      officePlaceholder: "Calle Principal 123, Springfield",
+      fieldGroup: "Grupo",
+      groupPlaceholder: "p. ej. Ventas",
+      fieldPhone: "Teléfono",
+      phonePlaceholder: "+34 600 123 456",
+      callBtnLabel: "Llamar",
+      allGroupsOption: "Todos los grupos",
+      allOfficesOption: "Todas las oficinas",
+      filterBtn: "Filtrar",
+      clearFiltersBtn: "Borrar filtros",
+      selectAllBtn: "Seleccionar todo",
+      deselectAllBtn: "Deseleccionar todo",
+      addrRoleTo: "Para",
+      addrRoleCc: "Cc",
+      addrRoleBcc: "Cco",
+      noRecipientsSelectedHint: "Aún no hay destinatarios seleccionados.",
+      groupFilterLabel: "Filtrar por grupo",
+      officeFilterLabel: "Filtrar por oficina",
+      addContactBtn: "Guardar contacto",
+      nameEmailWarn: "Ingresa un nombre y un correo válido.",
+      addressBookTitle: "Libreta de direcciones",
+      groupColorsBtn: "Colores de grupo",
+      groupColorsTitle: "Colores de grupo",
+      groupColorsEmptyMsg: "Primero añade un Grupo a un contacto; luego aparecerá aquí.",
+      renameGroupBtn: "Renombrar grupo",
+      renameGroupSaveBtn: "Guardar nombre",
+      renameGroupCancelBtn: "Cancelar",
+      noColorLabel: "Sin color",
+      colorRed: "Rojo",
+      colorOrange: "Naranja",
+      colorYellow: "Amarillo",
+      colorGreen: "Verde",
+      colorTeal: "Verde azulado",
+      colorBlue: "Azul",
+      colorPurple: "Morado",
+      colorPink: "Rosa",
+      colorBrown: "Marrón",
+      colorGray: "Gris",
+      copyForSheetsBtn: "Copiar para Google Sheets",
+      downloadCsvBtn: "Descargar CSV",
+      emptyContactsMsg: "Aún no hay contactos — añade el primero arriba.",
+      importTitle: "Importar desde Google Sheets",
+      exportTitle: "Exportar a Google Sheets",
+      sheetsImportShort: "Importar",
+      sheetsExportShort: "Exportar",
+      importHint: "Selecciona las columnas «Name» y «Email» en tu Google Sheet (añade también «Office», «Group» y «Phone» si quieres), copia (Ctrl/Cmd+C) y pega aquí — o sube un archivo CSV exportado de la hoja (Archivo → Descargar → CSV).",
+      exportHint: "Copia tu libreta de direcciones como texto para pegarla en una Google Sheet, o descárgala como archivo CSV.",
+      importPastePlaceholder: "Juana Pérez\tjuana@ejemplo.com\nJuan García\tjuan@ejemplo.com",
+      importPasteBtn: "Importar filas pegadas",
+      chooseCsvBtn: "Elegir archivo CSV…",
+      pasteRowsWarn: "Pega filas para importar.",
+      importedMsg: "Contactos añadidos: {n}.",
+      importFailedMsg: "No se reconoció ninguna fila con el formato «Nombre, Correo».",
+      confirmUnsavedTitle: "Cambios sin guardar",
+      confirmUnsavedContactText: "Este contacto aún no se ha guardado. ¿Guardar los cambios antes de cerrar?",
+      confirmUnsavedLetterText: "Esta carta aún no se ha guardado. ¿Guardar los cambios antes de cerrar?",
+      confirmSaveBtn: "Guardar cambios",
+      confirmDiscardBtn: "Descartar",
+      confirmImportTitle: "Importar desde Google Sheets",
+      confirmImportText: "¿Añadir {n} contacto(s) encontrados en los datos pegados/subidos?",
+      confirmImportKeepBtn: "Guardar cambios",
+      confirmImportCancelBtn: "Cancelar",
+      confirmDeleteContactTitle: "¿Eliminar este contacto?",
+      confirmDeleteContactText: "¿Eliminar a «{name}» de tu libreta de direcciones? Esta acción no se puede deshacer.",
+      confirmDeleteLetterTitle: "¿Eliminar esta carta?",
+      confirmDeleteLetterText: "¿Eliminar «{name}»? Esta acción no se puede deshacer.",
+      confirmDeleteBtn: "Eliminar",
+      confirmCancelBtn: "Cancelar",
+      copyPanelTitle: "Copiar y pegar en Google Sheets",
+      copyPanelHint: "El texto se copió a tu portapapeles (si tu navegador lo permitió) — pega (Ctrl/Cmd+V) en la celda A1 de tu Google Sheet, las columnas se dividirán automáticamente. Si la copia no funcionó, selecciona el texto de arriba manualmente.",
+      importLettersTitle: "Importar desde Google Sheets",
+      exportLettersTitle: "Exportar a Google Sheets",
+      importLettersHint: "Usa las columnas Subject, Body, Cc, Bcc, Personalize (yes/no) en tu Google Sheet, copia (Ctrl/Cmd+C) y pega aquí — o sube un archivo CSV exportado de la hoja (Archivo → Descargar → CSV). Los destinatarios no se incluyen — elígelos para cada carta después de importar.",
+      exportLettersHint: "Copia tus cartas como texto para pegarlas en una Google Sheet, o descárgalas como archivo CSV.",
+      importLettersPastePlaceholder: "Recordatorio de pago\t¡Hola, {{nombre}}!\t\t\tyes",
+      importedLettersMsg: "Cartas añadidas: {n}.",
+      importFailedLettersMsg: "No se reconoció ninguna fila con el formato «Subject, Body».",
+      confirmImportLettersText: "¿Añadir {n} carta(s) encontradas en los datos pegados/subidos?",
+      newLetterTitle: "Nueva carta",
+      editLetterTitle: "Editando carta",
+      fieldLetterSubject: "Asunto",
+      letterSubjectPlaceholder: "Recordatorio de pago",
+      fieldLetterBody: "Texto",
+      letterBodyPlaceholder: "¡Hola, {{nombre}}!",
+      letterHint: "Marcadores: {{nombre}}, {{email}} — se reemplazan al enviar cartas personalizadas",
+      templateRecipientsTitle: "Destinatarios de esta carta",
+      selectRecipientsToggle: "Seleccionar destinatarios",
+      saveLetterBtn: "Guardar carta",
+      cancelEditBtn: "Cancelar edición",
+      subjectBodyWarn: "Ingresa un asunto y el texto de la carta.",
+      readyLettersTitle: "Cartas listas para enviar",
+      emptyLettersMsg: "Aún no hay cartas — guarda tu primera plantilla arriba.",
+      varName: "nombre",
+      desktopSheetsTitle: "Sincronización con Google Sheets (aplicación de escritorio)",
+      desktopSheetsHint: "Disponible solo en la aplicación de escritorio/Android instalada — se conecta directamente a una Google Sheet, sin copiar y pegar ni iniciar sesión en Google.",
+      fieldServiceAccountEmail: "Comparte tu hoja con esta dirección",
+      serviceAccountEmailHint: "Abre tu Google Sheet → Compartir → pega esta dirección → dale acceso de Editor. Paso único, por hoja.",
+      fieldSpreadsheetId: "ID de la hoja de cálculo",
+      spreadsheetIdHint: "El identificador largo en la URL de la hoja, entre /d/ y /edit.",
+      fieldSheetTab: "Nombre de la pestaña de la hoja",
+      saveSheetsConfigBtn: "Guardar configuración",
+      pushToSheetBtn: "Enviar contactos → Sheet",
+      pullFromSheetBtn: "Traer contactos ← Sheet",
+      sheetsSyncingMsg: "Trabajando…",
+      sheetsConfigSavedMsg: "Configuración guardada.",
+      sheetsConfigNeededWarn: "Primero completa el ID de la hoja de cálculo.",
+      sheetsPushedMsg: "{n} contactos enviados a la hoja.",
+      sheetsPulledAddedMsg: "Añadidos desde la hoja: {n}.",
+      sheetsPulledUpdatedMsg: "Actualizados desde la hoja: {n}.",
+      sheetsErrorMsg: "Error: {n}",
+      languageMenuLabel: "Idioma",
     }
   };
 
@@ -1787,7 +2131,16 @@
 
   function applyI18n() {
     $all("[data-i18n]").forEach(function (el) { el.textContent = t(el.dataset.i18n); });
-    $all("[data-i18n-ph]").forEach(function (el) { el.placeholder = t(el.dataset.i18nPh); });
+    $all("[data-i18n-title]").forEach(function (el) {
+      var label = t(el.dataset.i18nTitle);
+      el.title = label;
+      el.setAttribute("aria-label", label);
+    });
+    $all("[data-i18n-ph]").forEach(function (el) {
+      var label = t(el.dataset.i18nPh);
+      el.placeholder = label;
+      el.setAttribute("data-placeholder", label);
+    });
     $all("[data-i18n-vars]").forEach(function (el) { el.innerHTML = wrapVars(t(el.dataset.i18nVars)); });
   }
 
@@ -1802,10 +2155,32 @@
     updatePreview();
   }
 
+  function openLangMenu() {
+    $("#langMenuPopover").hidden = false;
+    $("#langMenuBtn").setAttribute("aria-expanded", "true");
+  }
+  function closeLangMenu() {
+    $("#langMenuPopover").hidden = true;
+    $("#langMenuBtn").setAttribute("aria-expanded", "false");
+  }
+  $("#langMenuBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if ($("#langMenuPopover").hidden) openLangMenu();
+    else closeLangMenu();
+  });
   $("#langSeg").addEventListener("click", function (e) {
     var btn = e.target.closest("button[data-lang]");
     if (!btn) return;
     setLang(btn.dataset.lang);
+    closeLangMenu();
+  });
+  document.addEventListener("click", function (e) {
+    if ($("#langMenuPopover").hidden) return;
+    if (e.target.closest("#langMenuPopover") || e.target.closest("#langMenuBtn")) return;
+    closeLangMenu();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("#langMenuPopover").hidden) closeLangMenu();
   });
 
   (function initLang() {
@@ -1831,6 +2206,8 @@
       // panels do when they open.
       if (btn.dataset.tab === "contacts") {
         capChecklistToVisibleRows($("#contactList"), 5, "li");
+      } else if (btn.dataset.tab === "letters") {
+        capChecklistToVisibleRows($("#letterList"), 5, "li");
       }
     });
   });
@@ -2304,10 +2681,21 @@
     groupFilterEl.title = t("groupFilterLabel");
     var activeFilter = groupFilterEl.value;
 
+    // Office filter — narrowed to the active Group, same "second filter"
+    // convention already used by the Send/Letters recipient pickers (item
+    // 100): an empty Group leaves every office in the list.
+    state.addressFilterOffice = narrowOfficeOptionsForGroup("officeFilter", activeFilter);
+    var officeFilterBtn = $("#officeFilterBtn");
+    if (officeFilterBtn) officeFilterBtn.classList.toggle("active", !!state.addressFilterOffice);
+
     $("#groupOptions").innerHTML = groups.map(function (g) { return '<option value="' + esc(g) + '">'; }).join("");
 
     var list = $("#contactList");
-    var filtered = activeFilter ? state.contacts.filter(function (c) { return (c.group || "").trim() === activeFilter; }) : state.contacts;
+    var filtered = state.contacts.filter(function (c) {
+      if (activeFilter && (c.group || "").trim() !== activeFilter) return false;
+      if (state.addressFilterOffice && (c.office || "").trim() !== state.addressFilterOffice) return false;
+      return true;
+    });
     if (!filtered.length) {
       list.innerHTML = '<li class="empty-row">' + esc(state.contacts.length ? t("nothingFoundMsg") : t("emptyContactsMsg")) + '</li>';
     } else {
@@ -2783,6 +3171,48 @@
     }
   }
 
+  function setContactsSheetsOpen(open) {
+    state.contactsSheetsOpen = open;
+    $("#contactsSheetsCollapseBody").hidden = !open;
+    $("#contactsSheetsToggle").setAttribute("aria-expanded", String(open));
+  }
+
+  function setLettersSheetsOpen(open) {
+    state.lettersSheetsOpen = open;
+    $("#lettersSheetsCollapseBody").hidden = !open;
+    $("#lettersSheetsToggle").setAttribute("aria-expanded", String(open));
+  }
+
+  function setSendPreviewOpen(open) {
+    state.sendPreviewOpen = open;
+    $("#sendPreviewBody").hidden = !open;
+    $("#sendPreviewToggle").setAttribute("aria-expanded", String(open));
+  }
+
+  $("#sendPreviewToggle").addEventListener("click", function () {
+    setSendPreviewOpen(!state.sendPreviewOpen);
+  });
+  $("#sendPreviewToggle").addEventListener("keydown", function (e) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSendPreviewOpen(!state.sendPreviewOpen); }
+  });
+
+  $("#contactsSheetsToggle").addEventListener("click", function () {
+    setContactsSheetsOpen(!state.contactsSheetsOpen);
+  });
+  $("#contactsSheetsToggle").addEventListener("keydown", function (e) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setContactsSheetsOpen(!state.contactsSheetsOpen); }
+  });
+
+  $("#lettersSheetsToggle").addEventListener("click", function () {
+    setLettersSheetsOpen(!state.lettersSheetsOpen);
+  });
+  $("#lettersSheetsToggle").addEventListener("keydown", function (e) {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLettersSheetsOpen(!state.lettersSheetsOpen); }
+  });
+
   $("#tplFilterBtn").addEventListener("click", function (e) {
     e.stopPropagation();
     var pop = $("#tplFilterPopover");
@@ -3117,6 +3547,24 @@
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   });
 
+  // Same Import/Export toggle pattern as the Letters tab (see below) —
+  // swaps which body (paste/upload vs. copy/download) is shown under the
+  // "Import from Google Sheets" panel, without touching any of the
+  // existing element ids or click handlers above/below.
+  $all("#contactsSheetsModeSeg [data-sheets-mode]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var mode = btn.dataset.sheetsMode;
+      $all("#contactsSheetsModeSeg [data-sheets-mode]").forEach(function (b) {
+        var on = b === btn;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      $("#contactsSheetsImportBody").hidden = mode !== "import";
+      $("#contactsSheetsExportBody").hidden = mode !== "export";
+      if (mode === "import") $("#copyPanel").hidden = true;
+    });
+  });
+
   $("#downloadLettersCsvBtn").addEventListener("click", function () {
     var csv = lettersToDelimited(",");
     if (downloadsNS) {
@@ -3136,6 +3584,25 @@
       navigator.clipboard.writeText(tsv).catch(function () {});
     }
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  });
+
+  // The "Import from Google Sheets" panel doubles as "Export to Google
+  // Sheets" — clicking either segment swaps which body (paste/upload vs.
+  // copy/download) is shown, keeping every existing element/handler above
+  // untouched. Switching to Import also hides the reveal-on-demand copy
+  // panel below, so it doesn't linger once the person is done exporting.
+  $all("#lettersSheetsModeSeg [data-sheets-mode]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var mode = btn.dataset.sheetsMode;
+      $all("#lettersSheetsModeSeg [data-sheets-mode]").forEach(function (b) {
+        var on = b === btn;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      $("#lettersSheetsImportBody").hidden = mode !== "import";
+      $("#lettersSheetsExportBody").hidden = mode !== "export";
+      if (mode === "import") $("#copyLetterPanel").hidden = true;
+    });
   });
 
   // Splits parsing from committing: parseImportRows only figures out which
@@ -3312,6 +3779,50 @@
   });
   $("#letterContactFilter").addEventListener("input", renderLetterRecipientChecklist);
   $("#groupFilter").addEventListener("change", renderContacts);
+  $("#officeFilter").addEventListener("change", renderContacts);
+
+  function closeOfficeFilterPopover() {
+    var pop = $("#officeFilterPopover");
+    if (pop) { pop.hidden = true; pop.style.left = ""; }
+    var btn = $("#officeFilterBtn");
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  }
+  // Same off-screen-on-mobile fix as the Group colors popover (see
+  // positionGroupColorsPopover above), mirrored for the left-anchored side.
+  function positionOfficeFilterPopover() {
+    var pop = $("#officeFilterPopover");
+    var wrap = pop ? pop.closest(".office-filter-wrap") : null;
+    if (!pop || !wrap) return;
+    var margin = 8;
+    var wrapRect = wrap.getBoundingClientRect();
+    var popRect = pop.getBoundingClientRect();
+    var naturalLeft = wrapRect.left;
+    var maxLeft = window.innerWidth - margin - popRect.width;
+    var clampedLeft = Math.max(margin, Math.min(naturalLeft, maxLeft));
+    if (Math.abs(clampedLeft - naturalLeft) > 0.5) {
+      pop.style.left = (clampedLeft - wrapRect.left) + "px";
+    }
+  }
+  $("#officeFilterBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var pop = $("#officeFilterPopover");
+    var opening = pop.hidden;
+    pop.hidden = !opening;
+    $("#officeFilterBtn").setAttribute("aria-expanded", String(opening));
+    if (opening) positionOfficeFilterPopover();
+    else pop.style.left = "";
+  });
+  document.addEventListener("click", function (e) {
+    var pop = $("#officeFilterPopover");
+    if (!pop || pop.hidden) return;
+    var path = typeof e.composedPath === "function" ? e.composedPath() : [];
+    var btn = $("#officeFilterBtn");
+    if (path.indexOf(pop) !== -1 || (btn && path.indexOf(btn) !== -1)) return;
+    closeOfficeFilterPopover();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("#officeFilterPopover").hidden) closeOfficeFilterPopover();
+  });
 
   // ---------- Google Sheets live sync (desktop/Android app only, via Tauri) ----------
   // window.__TAURI__ only exists when this page is running inside the packaged
@@ -3413,6 +3924,7 @@
           '</div></li>';
       }).join("");
     }
+    capChecklistToVisibleRows($("#letterList"), 5, "li");
     $all("[data-del-letter]").forEach(function (b) {
       b.addEventListener("click", function () {
         var id = b.dataset.delLetter;
@@ -3486,40 +3998,30 @@
       cur.personalize !== base.personalize || cur.recipients !== base.recipients;
   }
 
-  // ---------- quick-edit numbers, name placeholder & custom chips ----------
-  // Reusable on any textarea: renders its content below itself with every
-  // number (and, when enabled, the {{name}} placeholder, plus any text the
-  // user has manually marked) turned into a tappable chip; tapping one pops
-  // an enlarged input to edit just that piece in place — a numeric keypad
-  // for numbers, a normal keyboard for everything else.
+  // ---------- inline number / {{name}} chips, directly inside the field ----------
+  // The Subject and Letter-text fields are visually a `.chip-field`
+  // (contenteditable) that mirrors a hidden real <input>/<textarea> of the
+  // same id + "Field" suffix — the hidden real element stays the single
+  // source of truth every other part of the app reads/writes via .value
+  // (saveLetter, updatePreview, substitute, etc. are all untouched), while
+  // the visible field renders every number (and, where enabled, the
+  // {{name}} placeholder) as a `.num-chip` span living right inside the
+  // normal flow of text. Tapping a chip turns that one span into a bigger,
+  // directly-editable piece in place — no separate popup, no secondary
+  // panel duplicating the letter text elsewhere on the page.
   var NUM_PART = "\\+?\\d+(?:[-.,:/ ]\\d+)*";
   // Matches the same set of name-placeholder spellings substitute() accepts
-  // ({{name}}, {{nom}}, {{имя}} — case-insensitive, optional inner spaces —
-  // a leftover from when the UI also supported Russian), not just the exact
-  // literal "{{name}}" — otherwise a letter written with any other spelling
-  // never turns into a tappable chip at all.
-  var NAME_PART = "\\{\\{\\s*(?:имя|name|nom)\\s*\\}\\}";
-  var activeNumEditor = null;
-  var activeChipIdx = null;
+  // ({{name}}, {{nom}}, {{nombre}}, {{имя}} — case-insensitive, optional inner spaces),
+  // not just the exact literal "{{name}}".
+  var NAME_PART = "\\{\\{\\s*(?:имя|name|nom|nombre)\\s*\\}\\}";
+  var CHIP_CLASS = { num: "num-chip", name: "num-chip chip-name" };
 
-  function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
-
-  // Builds the tokenizer regex fresh each render so it can include the
-  // editor's own custom terms (arbitrary text the user selected and marked
-  // as a chip) alongside the generic number/name patterns. Custom terms are
-  // tried first (and longest-first among themselves) so they win over a
-  // generic match at the same spot.
-  function tokenizeChips(text, includeName, customTerms) {
-    var alternatives = (customTerms || [])
-      .slice()
-      .sort(function (a, b) { return b.length - a.length; })
-      .map(escapeRegExp);
+  function tokenizeChips(text, includeName) {
+    var alternatives = [];
     if (includeName) alternatives.push(NAME_PART);
     alternatives.push(NUM_PART);
     var re = new RegExp(alternatives.join("|"), "gi");
     var nameRe = new RegExp("^" + NAME_PART + "$", "i");
-    var customLower = (customTerms || []).map(function (s) { return s.toLowerCase(); });
-
     var segments = [];
     var lastIndex = 0;
     var m;
@@ -3527,11 +4029,7 @@
     while ((m = re.exec(text))) {
       if (m.index > lastIndex) segments.push({ type: "text", value: text.slice(lastIndex, m.index) });
       var val = m[0];
-      var type;
-      if (customLower.indexOf(val.toLowerCase()) !== -1) type = "custom";
-      else if (includeName && nameRe.test(val)) type = "name";
-      else type = "num";
-      segments.push({ type: type, value: val });
+      segments.push({ type: (includeName && nameRe.test(val)) ? "name" : "num", value: val });
       lastIndex = m.index + val.length;
       if (val.length === 0) re.lastIndex++;
     }
@@ -3539,141 +4037,124 @@
     return segments;
   }
 
-  var CHIP_CLASS = { num: "num-chip", name: "num-chip chip-name", custom: "num-chip chip-custom" };
-
-  function makeNumberChipEditor(textareaSel, wrapSel, chipsSel, onChange, opts) {
+  function makeChipField(realSel, fieldSel, opts) {
     var includeName = !!(opts && opts.includeName);
-    var editor = {
-      textareaEl: $(textareaSel),
-      wrapEl: $(wrapSel),
-      chipsEl: $(chipsSel),
-      segments: [],
-      customTerms: [],
-      includeName: includeName,
-      onChange: onChange,
-      render: function () {
-        var text = this.textareaEl.value;
-        this.segments = tokenizeChips(text, includeName, this.customTerms);
-        var hasChip = this.segments.some(function (s) { return s.type !== "text"; });
-        this.wrapEl.hidden = !hasChip;
-        if (!hasChip) return;
-        this.chipsEl.innerHTML = this.segments.map(function (seg, i) {
-          if (seg.type === "text") return esc(seg.value);
-          return '<button type="button" class="' + CHIP_CLASS[seg.type] + '" data-num-idx="' + i + '">' + esc(seg.value) + '</button>';
-        }).join("");
-      },
-      // Marks an arbitrary piece of the current text as a chip, unless it's
-      // already covered by the automatic number/name detection.
-      addCustomTerm: function (term) {
-        var trimmed = (term || "").trim();
-        if (!trimmed) return;
-        var isNum = new RegExp("^" + NUM_PART + "$").test(trimmed);
-        var isName = includeName && new RegExp("^" + NAME_PART + "$", "i").test(trimmed);
-        if (!isNum && !isName && this.customTerms.indexOf(trimmed) === -1) {
-          this.customTerms.push(trimmed);
-        }
-        this.render();
-      }
-    };
-    editor.chipsEl.addEventListener("click", function (e) {
-      var btn = e.target.closest(".num-chip");
-      if (!btn) return;
-      activeNumEditor = editor;
-      openNumEditor(btn, Number(btn.dataset.numIdx));
-    });
-    editor.textareaEl.addEventListener("input", function () { editor.render(); });
-    return editor;
-  }
+    var real = $(realSel);
+    var field = $(fieldSel);
 
-  function openNumEditor(anchorEl, idx) {
-    activeChipIdx = idx;
-    var pop = $("#numEditPopover");
-    var input = $("#numEditInput");
-    var seg = activeNumEditor.segments[idx];
-    input.value = seg.value;
-    if (seg.type === "name" || seg.type === "custom") {
-      input.type = "text";
-      input.setAttribute("inputmode", "text");
-    } else {
-      input.type = "tel";
-      input.setAttribute("inputmode", "tel");
+    function getPlainText() {
+      var out = "";
+      field.childNodes.forEach(function (node) {
+        if (node.nodeType === 3) out += node.nodeValue;
+        else if (node.tagName === "BR") out += "\n"; // defensive: a stray <br> (e.g. from paste) still counts as a line break
+        else out += node.textContent;
+      });
+      return out;
     }
-    pop.hidden = false;
-    var rect = anchorEl.getBoundingClientRect();
-    pop.style.top = (rect.bottom + 6) + "px";
-    pop.style.left = rect.left + "px";
-    input.focus();
-    input.select();
-    requestAnimationFrame(function () {
-      var pw = pop.offsetWidth;
-      var maxLeft = window.innerWidth - pw - 8;
-      if (parseFloat(pop.style.left) > maxLeft) pop.style.left = Math.max(8, maxLeft) + "px";
-    });
-  }
-
-  function closeNumEditor(commit) {
-    var pop = $("#numEditPopover");
-    if (pop.hidden) return;
-    if (commit && activeChipIdx != null && activeNumEditor) {
-      var val = $("#numEditInput").value.trim();
-      var seg = activeNumEditor.segments[activeChipIdx];
-      if (val && seg) {
-        if (seg.type === "custom") {
-          var pos = activeNumEditor.customTerms.indexOf(seg.value);
-          if (pos !== -1) activeNumEditor.customTerms[pos] = val;
-          else activeNumEditor.customTerms.push(val);
-        }
-        seg.value = val;
-        activeNumEditor.textareaEl.value = activeNumEditor.segments.map(function (s) { return s.value; }).join("");
-        activeNumEditor.render();
-        if (activeNumEditor.onChange) activeNumEditor.onChange();
-      }
+    function syncFromField() {
+      real.value = getPlainText();
+      real.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    pop.hidden = true;
-    activeChipIdx = null;
+    function render() {
+      var segments = tokenizeChips(real.value, includeName);
+      field.innerHTML = segments.map(function (seg) {
+        if (seg.type === "text") return esc(seg.value);
+        return '<span class="' + CHIP_CLASS[seg.type] + '" tabindex="0">' + esc(seg.value) + '</span>';
+      }).join("");
+    }
+    function beginChipEdit(chip) {
+      // A contenteditable="true" span nested inside an already-contenteditable
+      // field is an ambiguous editing context in Chromium — focus put on the
+      // chip bounces straight back to the field root. Freezing the outer
+      // field (contentEditable = false) for the duration of the chip edit
+      // leaves only the chip itself editable, which keeps the browser's
+      // focus/caret there reliably.
+      field.contentEditable = "false";
+      chip.dataset.orig = chip.textContent;
+      chip.setAttribute("contenteditable", "true");
+      chip.classList.add("chip-editing");
+      chip.focus();
+      var range = document.createRange();
+      range.selectNodeContents(chip);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    function endChipEdit(chip, revert) {
+      if (revert || !chip.textContent.trim()) chip.textContent = chip.dataset.orig;
+      chip.removeAttribute("contenteditable");
+      chip.classList.remove("chip-editing");
+      delete chip.dataset.orig;
+      delete chip.dataset.cancelled;
+      field.contentEditable = "true";
+      syncFromField();
+    }
+
+    // Chromium's native focus handling for a tabindex-focusable child sitting
+    // inside a contenteditable region is flaky (it bounces focus between the
+    // chip and the field root a few times as it works out where to put the
+    // caret) — suppressing the browser's own mousedown-triggered focus/caret
+    // placement when the target is a not-yet-editing chip, and doing the
+    // focus transition ourselves in beginChipEdit() instead, sidesteps that
+    // entirely.
+    field.addEventListener("mousedown", function (e) {
+      var chip = e.target.closest(".num-chip");
+      if (chip && !chip.classList.contains("chip-editing")) e.preventDefault();
+    });
+    field.addEventListener("click", function (e) {
+      var chip = e.target.closest(".num-chip");
+      if (!chip || chip.classList.contains("chip-editing")) return;
+      beginChipEdit(chip);
+    });
+    field.addEventListener("keydown", function (e) {
+      var editingChip = e.target.closest && e.target.closest(".chip-editing");
+      if (editingChip) {
+        if (e.key === "Enter") { e.preventDefault(); editingChip.blur(); }
+        else if (e.key === "Escape") { e.preventDefault(); editingChip.dataset.cancelled = "1"; editingChip.blur(); }
+        return;
+      }
+      if (e.key === "Enter") {
+        if (opts && opts.multiline) {
+          // insertLineBreak is the native "insert a line break, don't start
+          // a new block" editing command — its caret handling is a browser
+          // primitive, unlike hand-rolled Range surgery, which fought with
+          // Chromium's own caret-restoration and left the break in the
+          // wrong place.
+          e.preventDefault();
+          document.execCommand("insertLineBreak");
+          syncFromField();
+        }
+        else { e.preventDefault(); }
+      }
+    });
+    field.addEventListener("focusout", function (e) {
+      var chip = e.target.closest && e.target.closest(".chip-editing");
+      if (chip) endChipEdit(chip, chip.dataset.cancelled === "1");
+      // Re-tokenize once focus actually leaves the whole field (not just
+      // moving from the field root onto one of its own chip spans) — this
+      // is what turns a number the person just typed into a tappable chip,
+      // without ever rebuilding the DOM (and losing the caret) while
+      // they're still actively typing inside it.
+      if (!field.contains(e.relatedTarget)) render();
+    });
+    // Fires for plain typing anywhere in the field AND for typing inside an
+    // actively-edited chip (a contenteditable child's "input" event bubbles
+    // up to its contenteditable ancestor) — one listener keeps the hidden
+    // real field's value current in both cases without ever rebuilding the
+    // DOM mid-edit (which would throw away the caret position).
+    field.addEventListener("input", syncFromField);
+
+    return { render: render };
   }
 
-  $("#numEditInput").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") { e.preventDefault(); closeNumEditor(true); }
-    else if (e.key === "Escape") { e.preventDefault(); closeNumEditor(false); }
-  });
-  $("#numEditInput").addEventListener("blur", function () { closeNumEditor(true); });
-  document.addEventListener("click", function (e) {
-    if ($("#numEditPopover").hidden) return;
-    if (e.target.closest("#numEditPopover") || e.target.closest(".num-chip")) return;
-    closeNumEditor(true);
-  });
-
-  var letterBodyEditor = makeNumberChipEditor("#newLetterBody", "#letterNumberChipsWrap", "#letterNumberChips");
-  var composeBodyEditor = makeNumberChipEditor("#composeBody", "#composeNumberChipsWrap", "#composeNumberChips", updatePreview, { includeName: true });
-  // Same chip editor, applied to the Subject field — subject lines carry
+  var letterBodyEditor = makeChipField("#newLetterBody", "#newLetterBodyField", { multiline: true });
+  var composeBodyEditor = makeChipField("#composeBody", "#composeBodyField", { multiline: true, includeName: true });
+  // Same chip field, applied to the Subject field — subject lines carry
   // dates/amounts/reference numbers just as often as the body, and (on the
   // Send tab) support the same {{name}} substitution as the body, so it
   // gets includeName:true there too.
-  var letterSubjectEditor = makeNumberChipEditor("#newLetterSubject", "#letterSubjectChipsWrap", "#letterSubjectChips");
-  var composeSubjectEditor = makeNumberChipEditor("#composeSubject", "#composeSubjectChipsWrap", "#composeSubjectChips", updatePreview, { includeName: true });
-
-  (function () {
-    var ta = $("#composeBody");
-    var btn = $("#composeMakeChipBtn");
-    function refreshMakeChipBtn() {
-      btn.disabled = ta.selectionStart === ta.selectionEnd;
-    }
-    ["select", "mouseup", "keyup", "touchend", "input", "focus"].forEach(function (ev) {
-      ta.addEventListener(ev, refreshMakeChipBtn);
-    });
-    document.addEventListener("selectionchange", function () {
-      if (document.activeElement === ta) refreshMakeChipBtn();
-    });
-    btn.addEventListener("click", function () {
-      var start = ta.selectionStart, end = ta.selectionEnd;
-      if (start === end) return;
-      var term = ta.value.slice(start, end);
-      composeBodyEditor.addCustomTerm(term);
-      updatePreview();
-      refreshMakeChipBtn();
-    });
-  })();
+  var letterSubjectEditor = makeChipField("#newLetterSubject", "#newLetterSubjectField", {});
+  var composeSubjectEditor = makeChipField("#composeSubject", "#composeSubjectField", { includeName: true });
 
   function renderLetterSelect() {
     var sel = $("#letterSelect");
@@ -3681,7 +4162,57 @@
     sel.innerHTML = '<option value="">' + esc(t("selectLetterOption")) + '</option>' +
       state.letters.map(function (l) { return '<option value="' + esc(l.id) + '">' + esc(l.subject) + '</option>'; }).join("");
     if (state.letters.some(function (l) { return l.id === current; })) sel.value = current;
+    renderLetterSelectDropdown();
   }
+
+  // ---------- Template dropdown: a hidden real <select> (still the value
+  // every other part of the app reads/writes) mirrored by a custom button +
+  // popover, so the visible list can be capped at 5 rows with scroll —
+  // matching Address book / Ready-made letters — which a native select's own
+  // popup does not let CSS control.
+  function renderLetterSelectDropdown() {
+    var current = $("#letterSelect").value;
+    $("#letterSelectList").innerHTML =
+      '<li data-tpl-id="" class="' + (current ? "" : "active") + '">' + esc(t("selectLetterOption")) + '</li>' +
+      state.letters.map(function (l) {
+        return '<li data-tpl-id="' + esc(l.id) + '" class="' + (l.id === current ? "active" : "") + '">' + esc(l.subject) + '</li>';
+      }).join("");
+    var selected = current ? state.letters.find(function (l) { return l.id === current; }) : null;
+    $("#letterSelectLabel").textContent = selected ? selected.subject : t("selectLetterOption");
+  }
+  function openLetterSelectPopover() {
+    $("#letterSelectPopover").hidden = false;
+    $("#letterSelectBtn").setAttribute("aria-expanded", "true");
+    // Row heights measure as 0 while the popover was hidden — re-measure now
+    // that it's actually visible, same reasoning as the other capped lists.
+    capChecklistToVisibleRows($("#letterSelectList"), 5, "li");
+  }
+  function closeLetterSelectPopover() {
+    $("#letterSelectPopover").hidden = true;
+    $("#letterSelectBtn").setAttribute("aria-expanded", "false");
+  }
+  $("#letterSelectBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if ($("#letterSelectPopover").hidden) openLetterSelectPopover();
+    else closeLetterSelectPopover();
+  });
+  $("#letterSelectList").addEventListener("click", function (e) {
+    var li = e.target.closest("[data-tpl-id]");
+    if (!li) return;
+    if ($("#letterSelect").value !== li.dataset.tplId) {
+      $("#letterSelect").value = li.dataset.tplId;
+      $("#letterSelect").dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    closeLetterSelectPopover();
+  });
+  document.addEventListener("click", function (e) {
+    if ($("#letterSelectPopover").hidden) return;
+    if (e.target.closest("#letterSelectPopover") || e.target.closest("#letterSelectBtn")) return;
+    closeLetterSelectPopover();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("#letterSelectPopover").hidden) closeLetterSelectPopover();
+  });
 
   $("#saveLetterBtn").addEventListener("click", function () {
     var subject = $("#newLetterSubject").value.trim();
@@ -3741,6 +4272,7 @@
     $("#composeBody").value = l ? l.body : "";
     composeBodyEditor.render();
     composeSubjectEditor.render();
+    renderLetterSelectDropdown();
     setComposeRecipientsFromLetter(l);
     setSendRecipientsOpen(false);
   });
@@ -3750,7 +4282,7 @@
   function substitute(text, contact) {
     if (!contact) return text;
     return text
-      .replace(/\{\{\s*(имя|name|nom)\s*\}\}/gi, contact.name || "")
+      .replace(/\{\{\s*(имя|name|nom|nombre)\s*\}\}/gi, contact.name || "")
       .replace(/\{\{\s*email\s*\}\}/gi, contact.email || "");
   }
 
@@ -3792,8 +4324,19 @@
   // harmless for the actual send: both call sites URL-encode this string
   // before using it (buildUrl/buildMailAppUrl), and "addr1, addr2" is a
   // completely standard way to write a multi-address Cc/Bcc header.
-  function getCc() { return splitEmails(state.composeRecipients ? state.composeRecipients.cc : "").join(", "); }
-  function getBcc() { return splitEmails(state.composeRecipients ? state.composeRecipients.bcc : "").join(", "); }
+  function getCc(sep) { return splitEmails(state.composeRecipients ? state.composeRecipients.cc : "").join(sep || ", "); }
+  function getBcc(sep) { return splitEmails(state.composeRecipients ? state.composeRecipients.bcc : "").join(sep || ", "); }
+
+  // Outlook (both the web compose deep link and the desktop app via mailto:)
+  // doesn't reliably split a comma-separated recipient list — Microsoft's own
+  // deep-link docs specify a semicolon-delimited "to"/"cc"/"bcc", and
+  // desktop Outlook's mailto: handler has the same long-documented quirk, so
+  // a comma-joined list can silently drop every recipient after the first.
+  // Gmail, Spark, Airmail, and a non-Outlook "Default" app all expect (or at
+  // least accept) commas, so only the three Outlook targets get semicolons.
+  function addrSeparatorFor(app) {
+    return (app === "outlook-personal" || app === "outlook-work" || app === "outlook-desktop") ? "; " : ", ";
+  }
 
   function setComposeRecipientsFromLetter(l) {
     if (!l) {
@@ -4015,8 +4558,9 @@
     }
     confirmAttachmentsIfAny().then(function (proceed) {
       if (!proceed) return;
-      var ccStr = getCc(), bccStr = getBcc();
       var app = state.mailApp;
+      var sep = addrSeparatorFor(app);
+      var ccStr = getCc(sep), bccStr = getBcc(sep);
       if (MAIL_APPS_WEB[app]) {
         if (personalize) {
           recipients.forEach(function (r, i) {
@@ -4026,7 +4570,7 @@
           });
           status.innerHTML = '<div class="status-msg">' + esc(tn("openingWindowsMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
         } else {
-          var to = recipients.map(function (r) { return r.email; }).join(",");
+          var to = recipients.map(function (r) { return r.email; }).join(sep);
           openExternalUrl(buildWebComposeUrl(app, to, subject, body, ccStr, bccStr));
           status.innerHTML = '<div class="status-msg">' + esc(tn("openingOneMsg", recipients.length)) + '</div>' + attachmentReminderHtml();
         }
@@ -4036,7 +4580,7 @@
         // in mail app" has always done — a page can't reliably fire off N
         // separate mailto:/custom-scheme handoffs in a row the way it can
         // open N browser tabs.
-        var toAll = recipients.map(function (r) { return r.email; }).join(",");
+        var toAll = recipients.map(function (r) { return r.email; }).join(sep);
         window.location.href = buildMailAppUrl(app, toAll, subject, body, ccStr, bccStr);
         status.innerHTML = '<div class="status-msg">' + esc(t("openedMailAppMsg")) + '</div>' + attachmentReminderHtml();
       }
@@ -4122,9 +4666,12 @@
   // or a Chromium browser that just hasn't fired the event yet — there is no
   // programmatic path, so the click instead opens a short dialog with the
   // exact manual steps for the browser we detect.
+  function isRunningStandalone() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
   function detectInstallHelpKey() {
     var ua = navigator.userAgent || "";
-    var isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    var isStandalone = isRunningStandalone();
     if (isStandalone) return "installHelpInstalled";
     var isIOS = /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
     if (isIOS) return "installHelpIOS";
@@ -4192,7 +4739,18 @@
   }
   (function () {
     var installBtn = $("#installAppBtn");
+    var installPanel = $("#installAppPanel");
     var deferredInstallPrompt = null;
+
+    // The "Install as an app" panel only makes sense before installing —
+    // once the page is already running as the installed PWA (standalone
+    // display mode on desktop, or "added to home screen" on iOS), there's
+    // nothing left to install, so hide the whole panel rather than leaving
+    // a dead Install button around.
+    function updateInstallPanelVisibility() {
+      if (installPanel) installPanel.hidden = isRunningStandalone();
+    }
+    updateInstallPanelVisibility();
 
     window.addEventListener("beforeinstallprompt", function (e) {
       e.preventDefault();
@@ -4200,7 +4758,21 @@
     });
     window.addEventListener("appinstalled", function () {
       deferredInstallPrompt = null;
+      // Installing doesn't switch this open tab into standalone mode by
+      // itself, so isRunningStandalone() would still say false right after
+      // the browser's own install flow finishes — hide the panel directly
+      // instead of re-checking it.
+      if (installPanel) installPanel.hidden = true;
     });
+    // Some browsers (mainly desktop Chrome/Edge) can flip display-mode to
+    // standalone without a page reload if the installed app's window takes
+    // over this same tab — listen so the panel disappears live in that case.
+    if (window.matchMedia) {
+      var standaloneQuery = window.matchMedia("(display-mode: standalone)");
+      var onStandaloneChange = function () { updateInstallPanelVisibility(); };
+      if (standaloneQuery.addEventListener) standaloneQuery.addEventListener("change", onStandaloneChange);
+      else if (standaloneQuery.addListener) standaloneQuery.addListener(onStandaloneChange);
+    }
     if (installBtn) {
       installBtn.addEventListener("click", function () {
         if (deferredInstallPrompt) {
@@ -4226,6 +4798,4 @@
 })();
 </script>
 
-
-</body>
-</html>
+</body></html>
