@@ -625,7 +625,7 @@
     -webkit-user-select: none;
   }
   .num-chip:hover, .num-chip:focus-visible { filter: brightness(1.1); }
-  .num-chip.chip-name {
+  .num-chip.chip-name, .num-chip.chip-address {
     background: color-mix(in srgb, var(--good) 18%, transparent);
     color: var(--good);
     border-color: color-mix(in srgb, var(--good) 40%, transparent);
@@ -1744,7 +1744,7 @@
       letterSubjectPlaceholder: "Payment reminder",
       fieldLetterBody: "Text",
       letterBodyPlaceholder: "Hello, {{name}}!",
-      letterHint: "Placeholders: {{name}}, {{email}} — replaced when sending personalized letters",
+      letterHint: "Placeholders: {{name}}, {{email}}, {{address}} — replaced when sending personalized letters",
       templateRecipientsTitle: "Recipients for this letter",
       selectRecipientsToggle: "Select recipients",
       saveLetterBtn: "Save letter",
@@ -1928,7 +1928,7 @@
       letterSubjectPlaceholder: "Rappel de paiement",
       fieldLetterBody: "Texte",
       letterBodyPlaceholder: "Bonjour, {{nom}}!",
-      letterHint: "Variables : {{nom}}, {{email}} — remplacées lors de l'envoi personnalisé",
+      letterHint: "Variables : {{nom}}, {{email}}, {{address}} — remplacées lors de l'envoi personnalisé",
       templateRecipientsTitle: "Destinataires de cette lettre",
       selectRecipientsToggle: "Choisir les destinataires",
       saveLetterBtn: "Enregistrer la lettre",
@@ -2112,7 +2112,7 @@
       letterSubjectPlaceholder: "Recordatorio de pago",
       fieldLetterBody: "Texto",
       letterBodyPlaceholder: "¡Hola, {{nombre}}!",
-      letterHint: "Marcadores: {{nombre}}, {{email}} — se reemplazan al enviar cartas personalizadas",
+      letterHint: "Marcadores: {{nombre}}, {{email}}, {{address}} — se reemplazan al enviar cartas personalizadas",
       templateRecipientsTitle: "Destinatarios de esta carta",
       selectRecipientsToggle: "Seleccionar destinatarios",
       saveLetterBtn: "Guardar carta",
@@ -4066,7 +4066,12 @@
   // ({{name}}, {{nom}}, {{nombre}}, {{имя}} — case-insensitive, optional inner spaces),
   // not just the exact literal "{{name}}".
   var NAME_PART = "\\{\\{\\s*(?:имя|name|nom|nombre)\\s*\\}\\}";
-  var CHIP_CLASS = { num: "num-chip", name: "num-chip chip-name", date: "num-chip chip-date", time: "num-chip chip-time" };
+  // {{address}} — the contact's office/address field. Kept as one literal
+  // English spelling in every UI language, same as {{email}} already is
+  // (neither is translated per-language the way {{name}}/{{nom}}/{{nombre}}
+  // is), so this one regex covers it everywhere.
+  var ADDRESS_PART = "\\{\\{\\s*address\\s*\\}\\}";
+  var CHIP_CLASS = { num: "num-chip", name: "num-chip chip-name", address: "num-chip chip-address", date: "num-chip chip-date", time: "num-chip chip-time" };
 
   // A "num" chip whose text happens to be shaped like a calendar date or a
   // clock time gets its own chip subtype, so beginChipEdit() can open a
@@ -4119,10 +4124,16 @@
 
   function tokenizeChips(text, includeName) {
     var alternatives = [];
-    if (includeName) alternatives.push(NAME_PART);
+    // {{name}} and {{address}} are both personalization placeholders only
+    // meaningful where a contact is actually being substituted in (the Send
+    // tab's compose fields) — gated behind the same includeName flag rather
+    // than adding a second option, since anywhere one makes sense the other
+    // does too.
+    if (includeName) { alternatives.push(NAME_PART); alternatives.push(ADDRESS_PART); }
     alternatives.push(NUM_PART);
     var re = new RegExp(alternatives.join("|"), "gi");
     var nameRe = new RegExp("^" + NAME_PART + "$", "i");
+    var addressRe = new RegExp("^" + ADDRESS_PART + "$", "i");
     var segments = [];
     var lastIndex = 0;
     var m;
@@ -4130,7 +4141,9 @@
     while ((m = re.exec(text))) {
       if (m.index > lastIndex) segments.push({ type: "text", value: text.slice(lastIndex, m.index) });
       var val = m[0];
-      var segType = (includeName && nameRe.test(val)) ? "name" : classifyNumChip(val);
+      var segType = (includeName && nameRe.test(val)) ? "name"
+        : (includeName && addressRe.test(val)) ? "address"
+        : classifyNumChip(val);
       segments.push({ type: segType, value: val });
       lastIndex = m.index + val.length;
       if (val.length === 0) re.lastIndex++;
@@ -4194,12 +4207,13 @@
       field.contentEditable = "false";
       chip.dataset.orig = chip.textContent;
       chip.setAttribute("contenteditable", "true");
-      // Number chips (not the {{name}} chip) get inputmode="tel" so mobile
-      // browsers pop the numeric/phone keypad instead of the full text
-      // keyboard — matches what the old real <input type="tel"> editor did
-      // before chip editing moved inline (a contenteditable element honors
-      // inputmode too, in every mobile browser that matters here).
-      if (!chip.classList.contains("chip-name")) chip.setAttribute("inputmode", "tel");
+      // Number chips (not the {{name}}/{{address}} text placeholders) get
+      // inputmode="tel" so mobile browsers pop the numeric/phone keypad
+      // instead of the full text keyboard — matches what the old real
+      // <input type="tel"> editor did before chip editing moved inline (a
+      // contenteditable element honors inputmode too, in every mobile
+      // browser that matters here).
+      if (!chip.classList.contains("chip-name") && !chip.classList.contains("chip-address")) chip.setAttribute("inputmode", "tel");
       chip.classList.add("chip-editing");
       chip.focus();
       // chip.focus() can synchronously blur/commit whatever was previously
@@ -4501,7 +4515,8 @@
     if (!contact) return text;
     return text
       .replace(/\{\{\s*(имя|name|nom|nombre)\s*\}\}/gi, contact.name || "")
-      .replace(/\{\{\s*email\s*\}\}/gi, contact.email || "");
+      .replace(/\{\{\s*email\s*\}\}/gi, contact.email || "")
+      .replace(/\{\{\s*address\s*\}\}/gi, contact.office || "");
   }
 
   function getRecipients() {
