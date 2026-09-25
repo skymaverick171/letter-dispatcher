@@ -1,4 +1,7 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Letter Dispatcher</title>
@@ -608,6 +611,18 @@
     border-radius: 5px;
     padding: 1px 5px;
     cursor: pointer;
+    /* A tap that lands squarely on the chip but drifts a pixel or two
+       (near-inevitable on a touchscreen) is otherwise read by the browser
+       as the start of a text-selection drag instead of a tap, since the
+       chip's own number text is normally selectable — that native
+       selection wins the race before beginChipEdit()'s click handler ever
+       runs, so the chip appears to just "highlight" instead of enlarging.
+       Disabling selection on the chip while it's not being edited removes
+       that native fallback entirely, so an imprecise tap on it always
+       resolves to a plain click. Selection is restored below once editing
+       actually starts, so the number can still be selected/retyped. */
+    user-select: none;
+    -webkit-user-select: none;
   }
   .num-chip:hover, .num-chip:focus-visible { filter: brightness(1.1); }
   .num-chip.chip-name {
@@ -913,10 +928,17 @@
   }
   .num-chip.chip-editing {
     cursor: text;
-    font-size: 1.15em;
-    padding: 2px 7px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 1.55em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 2px 8px;
     outline: 2px solid var(--accent);
     outline-offset: 1px;
+    /* Once actually in edit mode the chip is real editable text again, so
+       restore normal selection (needed to select-all/retype the value). */
+    user-select: text;
+    -webkit-user-select: text;
   }
   .install-help-overlay {
     position: fixed;
@@ -957,7 +979,10 @@
   @media (max-width: 640px) {
     .grid2 { grid-template-columns: 1fr; }
   }
-</style></head><body>
+</style>
+</head>
+<body>
+
 
 <div class="stripe"></div>
 <div class="shell">
@@ -4072,6 +4097,12 @@
       field.contentEditable = "false";
       chip.dataset.orig = chip.textContent;
       chip.setAttribute("contenteditable", "true");
+      // Number chips (not the {{name}} chip) get inputmode="tel" so mobile
+      // browsers pop the numeric/phone keypad instead of the full text
+      // keyboard — matches what the old real <input type="tel"> editor did
+      // before chip editing moved inline (a contenteditable element honors
+      // inputmode too, in every mobile browser that matters here).
+      if (!chip.classList.contains("chip-name")) chip.setAttribute("inputmode", "tel");
       chip.classList.add("chip-editing");
       chip.focus();
       var range = document.createRange();
@@ -4083,6 +4114,7 @@
     function endChipEdit(chip, revert) {
       if (revert || !chip.textContent.trim()) chip.textContent = chip.dataset.orig;
       chip.removeAttribute("contenteditable");
+      chip.removeAttribute("inputmode");
       chip.classList.remove("chip-editing");
       delete chip.dataset.orig;
       delete chip.dataset.cancelled;
@@ -4798,4 +4830,6 @@
 })();
 </script>
 
-</body></html>
+
+</body>
+</html>
