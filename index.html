@@ -929,7 +929,7 @@
   .num-chip.chip-editing {
     cursor: text;
     font-family: "IBM Plex Mono", monospace;
-    font-size: 1.55em;
+    font-size: 1.95em;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     padding: 2px 8px;
@@ -939,6 +939,24 @@
        restore normal selection (needed to select-all/retype the value). */
     user-select: text;
     -webkit-user-select: text;
+  }
+  /* Date/time chips don't use .chip-editing at all — tapping one swaps the
+     span for a real native <input type="date"|"time"> in the same spot,
+     styled to match the enlarged look above so the swap doesn't jump. */
+  .chip-picker-input {
+    font: inherit;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 1.95em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 5px;
+    padding: 1px 6px;
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    vertical-align: baseline;
   }
   .install-help-overlay {
     position: fixed;
@@ -2618,7 +2636,16 @@
     var prevOffice = officeSel.value;
     officeSel.innerHTML = '<option value="">' + esc(t("allOfficesOption")) + '</option>' +
       offices.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join("");
-    officeSel.value = offices.indexOf(prevOffice) !== -1 ? prevOffice : "";
+    // Resetting Group back to "All groups" clears Office too. Office is a
+    // sub-filter of Group, so once no group is selected, the previously
+    // picked office is almost always still present in the now-unnarrowed
+    // full office list (contactOfficesForGroup("") returns every office) —
+    // which used to silently leave the contact list filtered down to that
+    // one office with no obvious visual cue (just a small dot on the 🏢
+    // button), making contacts look like they'd vanished. Only preserve the
+    // previous office when actually narrowing to a specific, non-empty
+    // group and that office is still one of the narrowed options.
+    officeSel.value = (group && offices.indexOf(prevOffice) !== -1) ? prevOffice : "";
     return officeSel.value;
   }
 
@@ -4039,7 +4066,56 @@
   // ({{name}}, {{nom}}, {{nombre}}, {{имя}} — case-insensitive, optional inner spaces),
   // not just the exact literal "{{name}}".
   var NAME_PART = "\\{\\{\\s*(?:имя|name|nom|nombre)\\s*\\}\\}";
-  var CHIP_CLASS = { num: "num-chip", name: "num-chip chip-name" };
+  var CHIP_CLASS = { num: "num-chip", name: "num-chip chip-name", date: "num-chip chip-date", time: "num-chip chip-time" };
+
+  // A "num" chip whose text happens to be shaped like a calendar date or a
+  // clock time gets its own chip subtype, so beginChipEdit() can open a
+  // native calendar / time panel for it instead of plain inline text
+  // editing. Kept deliberately narrow (exact anchored shapes only) so
+  // ordinary numbers, invoice references and phone numbers — which already
+  // flow through NUM_PART today — are never reclassified by accident.
+  var DATE_ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;              // 2026-10-01 (Y-M-D, matches native <input type=date>)
+  var DATE_DOT_RE = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;         // 01.10.2026 (D.M.Y)
+  var DATE_SLASH_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;       // 01/10/2026 (D/M/Y)
+  var TIME_RE = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;            // 14:30 or 14:30:00
+
+  function pad2(n) { n = String(n); return n.length < 2 ? "0" + n : n; }
+
+  function classifyNumChip(val) {
+    if (DATE_ISO_RE.test(val) || DATE_DOT_RE.test(val) || DATE_SLASH_RE.test(val)) return "date";
+    if (TIME_RE.test(val)) return "time";
+    return "num";
+  }
+  // Chip text -> value for the native <input type="date">/"time"> (ISO / HH:MM[:SS]).
+  function dateChipToISO(text) {
+    var m;
+    if (DATE_ISO_RE.test(text)) return text;
+    if ((m = DATE_DOT_RE.exec(text))) return m[3] + "-" + pad2(m[2]) + "-" + pad2(m[1]);
+    if ((m = DATE_SLASH_RE.exec(text))) return m[3] + "-" + pad2(m[2]) + "-" + pad2(m[1]);
+    return null;
+  }
+  // Native picker value (always ISO Y-M-D) -> chip text, preserving the
+  // original chip's separator/order style so a dot-formatted date stays
+  // dot-formatted after being re-picked, etc.
+  function isoToDateChip(iso, origText) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!m) return origText;
+    var y = m[1], mo = m[2], d = m[3];
+    if (DATE_DOT_RE.test(origText)) return d + "." + mo + "." + y;
+    if (DATE_SLASH_RE.test(origText)) return d + "/" + mo + "/" + y;
+    return iso;
+  }
+  function timeChipToValue(text) {
+    var m = TIME_RE.exec(text);
+    if (!m) return null;
+    return pad2(m[1]) + ":" + pad2(m[2]) + (m[3] ? (":" + pad2(m[3])) : "");
+  }
+  function timeValueToChip(value, origText) {
+    var m = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+    if (!m) return value;
+    var hadSeconds = /^\d{1,2}:\d{2}:\d{2}$/.test(origText);
+    return hadSeconds ? (m[1] + ":" + m[2] + ":" + (m[3] || "00")) : (m[1] + ":" + m[2]);
+  }
 
   function tokenizeChips(text, includeName) {
     var alternatives = [];
@@ -4054,7 +4130,8 @@
     while ((m = re.exec(text))) {
       if (m.index > lastIndex) segments.push({ type: "text", value: text.slice(lastIndex, m.index) });
       var val = m[0];
-      segments.push({ type: (includeName && nameRe.test(val)) ? "name" : "num", value: val });
+      var segType = (includeName && nameRe.test(val)) ? "name" : classifyNumChip(val);
+      segments.push({ type: segType, value: val });
       lastIndex = m.index + val.length;
       if (val.length === 0) re.lastIndex++;
     }
@@ -4072,6 +4149,19 @@
       field.childNodes.forEach(function (node) {
         if (node.nodeType === 3) out += node.nodeValue;
         else if (node.tagName === "BR") out += "\n"; // defensive: a stray <br> (e.g. from paste) still counts as a line break
+        // A date/time chip mid-edit is a real <input>, not text — .textContent
+        // on a form control is always "", so reading it that way would punch
+        // a hole in the letter text on every keystroke/pick while the native
+        // picker is open. Reformat its live value the same way commit() would
+        // (not just the raw ISO/24h value) so ANY read of the field — even
+        // one that races ahead of this input's own commit, which native
+        // date/time pickers can trigger via an internal blur the moment a
+        // value is picked — already reflects the right text.
+        else if (node.tagName === "INPUT") {
+          var pickerOrig = node.dataset.orig || "";
+          if (node.value) out += node.type === "date" ? isoToDateChip(node.value, pickerOrig) : timeValueToChip(node.value, pickerOrig);
+          else out += pickerOrig;
+        }
         else out += node.textContent;
       });
       return out;
@@ -4088,6 +4178,13 @@
       }).join("");
     }
     function beginChipEdit(chip) {
+      // Date/time chips don't get the inline-contenteditable treatment below —
+      // they swap in a real native <input type="date"/"time"> so tapping one
+      // opens the device's own calendar / time panel instead of a text caret.
+      if (chip.classList.contains("chip-date") || chip.classList.contains("chip-time")) {
+        beginPickerEdit(chip);
+        return;
+      }
       // A contenteditable="true" span nested inside an already-contenteditable
       // field is an ambiguous editing context in Chromium — focus put on the
       // chip bounces straight back to the field root. Freezing the outer
@@ -4105,6 +4202,14 @@
       if (!chip.classList.contains("chip-name")) chip.setAttribute("inputmode", "tel");
       chip.classList.add("chip-editing");
       chip.focus();
+      // chip.focus() can synchronously blur/commit whatever was previously
+      // focused (another chip's inline edit, or a date/time chip's native
+      // picker input) — and that other edit session's own cleanup resets
+      // field.contentEditable back to "true" as part of ending itself. Force
+      // it back to "false" here so THIS chip's edit isn't left sitting in
+      // the ambiguous nested-contenteditable state the comment above warns
+      // about (which is what makes focus immediately bounce back to field).
+      field.contentEditable = "false";
       var range = document.createRange();
       range.selectNodeContents(chip);
       var sel = window.getSelection();
@@ -4120,6 +4225,87 @@
       delete chip.dataset.cancelled;
       field.contentEditable = "true";
       syncFromField();
+    }
+    // Date/time chips: swap the chip span itself for a real native
+    // <input type="date"|"time"> sitting in exactly the same spot in the
+    // field's flow, focus it and (where supported) call showPicker() so the
+    // calendar / time panel pops immediately — matching how tapping a plain
+    // number chip immediately puts you in an editable state, just with a
+    // native picker instead of a text caret. The field stays frozen
+    // (contentEditable=false) the whole time, same as the plain-chip path.
+    function beginPickerEdit(chip) {
+      var isDate = chip.classList.contains("chip-date");
+      field.contentEditable = "false";
+      var orig = chip.textContent;
+      var input = document.createElement("input");
+      input.type = isDate ? "date" : "time";
+      input.className = "chip-picker-input";
+      input.tabIndex = 0;
+      input.dataset.orig = orig; // read by getPlainText() to reformat this input's live value while it's still in the field
+      if (!isDate) {
+        var tm = TIME_RE.exec(orig);
+        if (tm && tm[3]) input.step = "1"; // keep seconds precision if the original had it
+      }
+      var value = isDate ? dateChipToISO(orig) : timeChipToValue(orig);
+      if (value) input.value = value;
+      chip.replaceWith(input);
+      input.focus();
+      // Same reentrancy guard as beginChipEdit(): focusing this input can
+      // synchronously run another chip-edit's own end-of-edit cleanup, which
+      // resets field.contentEditable to "true" as part of finishing itself.
+      field.contentEditable = "false";
+      if (typeof input.showPicker === "function") {
+        try { input.showPicker(); } catch (e) { /* not user-activated / unsupported — the input's own picker icon still works */ }
+      }
+      var done = false;
+      function commit(cancel) {
+        if (done) return;
+        done = true;
+        input.removeEventListener("change", onChange);
+        input.removeEventListener("blur", onBlur);
+        input.removeEventListener("keydown", onKeydown);
+        var finalText = orig;
+        if (!cancel && input.value) {
+          finalText = isDate ? isoToDateChip(input.value, orig) : timeValueToChip(input.value, orig);
+        }
+        // Unfreeze the field first, synchronously — this must happen even if
+        // the DOM swap below has to be deferred (see try/catch), otherwise a
+        // focusout->render() race (field's own listener, further down) would
+        // leave the whole field stuck non-editable.
+        field.contentEditable = "true";
+        function swap() {
+          if (!input.isConnected) { syncFromField(); return; } // already replaced by a render() race — real.value is already correct (getPlainText reads a live <input>'s .value), nothing left to do
+          var span = document.createElement("span");
+          span.className = chip.className;
+          span.setAttribute("tabindex", "0");
+          span.textContent = finalText;
+          input.replaceWith(span);
+          syncFromField();
+        }
+        try {
+          swap();
+        } catch (e) {
+          // Chromium refuses a synchronous node removal/replacement made
+          // from within that same node's own 'blur' handler ("...no longer
+          // a child of this node. Perhaps it was moved in a 'blur' event
+          // handler?"). Retrying one tick later, once the blur dispatch has
+          // fully unwound, is the standard workaround.
+          setTimeout(swap, 0);
+        }
+      }
+      function onChange() { commit(false); }
+      function onBlur() { commit(false); }
+      function onKeydown(e) {
+        // Stop these from bubbling to the field's own keydown handler, which
+        // otherwise treats a bare Enter as "insert a line break in the
+        // letter text" — exactly what must NOT happen while the keystroke
+        // was meant for this date/time input.
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); commit(true); }
+        else if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); input.blur(); }
+      }
+      input.addEventListener("change", onChange);
+      input.addEventListener("blur", onBlur);
+      input.addEventListener("keydown", onKeydown);
     }
 
     // Chromium's native focus handling for a tabindex-focusable child sitting
