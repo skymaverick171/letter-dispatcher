@@ -179,6 +179,7 @@
     <button data-lang="ru">RU</button>
     <button data-lang="en">EN</button>
     <button data-lang="fr">FR</button>
+    <button data-lang="es">ES</button>
   </div>
 
   <div class="eyebrow">Letter Dispatcher</div>
@@ -363,6 +364,48 @@
           ]
         }
       }
+    },
+    es: {
+      title: "Instalación en 30 segundos",
+      lede: "Detectamos tu sistema — los pasos de abajo son exactamente los que necesitas en él. No hay nada que descargar ni compilar.",
+      iosLabel: "iPhone/iPad",
+      openBtn: "Abrir Letter Dispatcher",
+      qrStrong: "O escanea con tu teléfono",
+      qrText: "Apunta la cámara de tu teléfono al código — abrirá el mismo enlace.",
+      moreSummary: "Otras formas de instalar",
+      moreList: [
+        "<strong>Una guía detallada para cada sistema</strong> con una imagen para cada paso — por si algo no coincide.",
+        "<strong>Un programa independiente para Windows o Android</strong> (un .exe / .apk normal, sin navegador) también existe — pide el enlace a quien te envió esta página."
+      ],
+      footer: "Letter Dispatcher · instalación rápida",
+      platforms: {
+        windows: {
+          title: "Windows", sub: "Chrome o Edge",
+          steps: [
+            "Haz clic en <strong>«Abrir Letter Dispatcher»</strong> más abajo — se abrirá en tu navegador.",
+            "Aparecerá un botón <strong>«Install app»</strong> en la parte superior de la página — haz clic en él.",
+            "¿No ves el botón? Busca el icono ⊕ a la derecha de la barra de direcciones, o el menú (⋮) → <strong>«Instalar Letter Dispatcher…»</strong>.",
+            "Listo — aparecerá un icono en el escritorio y en el menú Inicio, como un programa normal."
+          ]
+        },
+        android: {
+          title: "Android", sub: "Chrome",
+          steps: [
+            "Toca <strong>«Abrir Letter Dispatcher»</strong> más abajo — se abrirá en Chrome.",
+            "Toca <strong>«Install app»</strong> en la parte superior de la página, o el menú (⋮) → <strong>«Instalar aplicación»</strong>.",
+            "Confirma — listo. Aparecerá un icono en la pantalla de inicio."
+          ]
+        },
+        ios: {
+          title: "iPhone / iPad", sub: "solo en Safari",
+          steps: [
+            "Abre el enlace <strong>específicamente en Safari</strong> (esto no funciona en Chrome en iPhone).",
+            "Toca el icono <strong>Compartir</strong> (un cuadrado con una flecha hacia arriba) en la parte inferior de la pantalla.",
+            "Elige <strong>«Añadir a pantalla de inicio»</strong> — puede que tengas que desplazarte por la lista.",
+            "Toca <strong>«Añadir»</strong> en la esquina — listo."
+          ]
+        }
+      }
     }
   };
 
@@ -370,6 +413,7 @@
     var nav = (navigator.language || "en").toLowerCase();
     if (nav.indexOf("ru") === 0) return "ru";
     if (nav.indexOf("fr") === 0) return "fr";
+    if (nav.indexOf("es") === 0) return "es";
     return "en";
   }
   function detectPlatform() {

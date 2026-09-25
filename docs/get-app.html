@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Установить Letter Dispatcher</title>
+<title id="tTitleTag">Установить Letter Dispatcher</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600..700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
   :root {
@@ -94,34 +94,151 @@
     text-align: center; padding: 18px 20px; color: var(--muted);
     font-size: 12.5px; font-family: "IBM Plex Mono", monospace;
   }
+  .lang-switch {
+    display: flex; gap: 2px; background: var(--surface-2); padding: 3px;
+    border-radius: 8px; margin-bottom: 18px;
+  }
+  .lang-switch button {
+    font: inherit; font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 5px 9px; border-radius: 6px; border: none; background: transparent;
+    color: var(--muted); cursor: pointer;
+  }
+  .lang-switch button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
 </style>
 </head>
 <body>
   <div class="stripe"></div>
   <div class="shell">
+    <div class="lang-switch" id="langSwitch">
+      <button data-lang="ru">RU</button>
+      <button data-lang="en">EN</button>
+      <button data-lang="fr">FR</button>
+      <button data-lang="es">ES</button>
+    </div>
     <div class="seal">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
     </div>
     <div class="eyebrow">Letter Dispatcher</div>
-    <h1>Установи приложение на телефон или компьютер</h1>
-    <p class="lede">Нажми кнопку ниже — откроется приложение, а браузер сам предложит установить его как обычную программу.</p>
+    <h1 id="tH1">Установи приложение на телефон или компьютер</h1>
+    <p class="lede" id="tLede">Нажми кнопку ниже — откроется приложение, а браузер сам предложит установить его как обычную программу.</p>
 
     <a class="btn" href="https://skymaverick171.github.io/letter-dispatcher/" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-      Открыть Letter Dispatcher
+      <span id="tBtn">Открыть Letter Dispatcher</span>
     </a>
 
     <div class="steps">
-      <p class="steps-title">Как установить</p>
-      <ol>
+      <p class="steps-title" id="tStepsTitle">Как установить</p>
+      <ol id="tStepsList">
         <li><b>Android / Chrome:</b> после открытия нажми «Install app» в шапке, или меню (⋮) → «Установить приложение» / «Добавить на главный экран».</li>
         <li><b>iPhone / Safari:</b> кнопка «Поделиться» (квадрат со стрелкой) → «На экран «Домой»».</li>
         <li><b>Windows / Mac (Chrome, Edge):</b> значок ⊕ справа в адресной строке → «Установить».</li>
       </ol>
     </div>
 
-    <p class="link-fallback">Или скопируй ссылку: <a href="https://skymaverick171.github.io/letter-dispatcher/">skymaverick171.github.io/letter-dispatcher</a></p>
+    <p class="link-fallback" id="tLinkCopy">Или скопируй ссылку: <a href="https://skymaverick171.github.io/letter-dispatcher/">skymaverick171.github.io/letter-dispatcher</a></p>
+    <p class="link-fallback">Не получается? <a href="install.html" id="tLinkInstall">Подробная инструкция по шагам →</a></p>
   </div>
-  <footer>Letter Dispatcher</footer>
+  <footer id="tFooter">Letter Dispatcher</footer>
+  <script>
+  (function () {
+    var I18N = {
+      ru: {
+        titleTag: "Установить Letter Dispatcher",
+        h1: "Установи приложение на телефон или компьютер",
+        lede: "Нажми кнопку ниже — откроется приложение, а браузер сам предложит установить его как обычную программу.",
+        btn: "Открыть Letter Dispatcher",
+        stepsTitle: "Как установить",
+        steps: [
+          "<b>Android / Chrome:</b> после открытия нажми «Install app» в шапке, или меню (⋮) → «Установить приложение» / «Добавить на главный экран».",
+          "<b>iPhone / Safari:</b> кнопка «Поделиться» (квадрат со стрелкой) → «На экран «Домой»».",
+          "<b>Windows / Mac (Chrome, Edge):</b> значок ⊕ справа в адресной строке → «Установить»."
+        ],
+        linkCopyPrefix: "Или скопируй ссылку: ",
+        linkInstall: "Подробная инструкция по шагам →",
+        footer: "Letter Dispatcher"
+      },
+      en: {
+        titleTag: "Install Letter Dispatcher",
+        h1: "Install the app on your phone or computer",
+        lede: "Tap the button below — the app opens, and the browser will offer to install it as a regular program.",
+        btn: "Open Letter Dispatcher",
+        stepsTitle: "How to install",
+        steps: [
+          "<b>Android / Chrome:</b> after it opens, tap \"Install app\" in the header, or menu (⋮) → \"Install app\" / \"Add to Home screen\".",
+          "<b>iPhone / Safari:</b> the \"Share\" button (square with an arrow) → \"Add to Home Screen\".",
+          "<b>Windows / Mac (Chrome, Edge):</b> the ⊕ icon on the right of the address bar → \"Install\"."
+        ],
+        linkCopyPrefix: "Or copy the link: ",
+        linkInstall: "Detailed step-by-step guide →",
+        footer: "Letter Dispatcher"
+      },
+      fr: {
+        titleTag: "Installer Letter Dispatcher",
+        h1: "Installez l'application sur votre téléphone ou ordinateur",
+        lede: "Appuyez sur le bouton ci-dessous — l'application s'ouvre, et le navigateur proposera de l'installer comme un programme classique.",
+        btn: "Ouvrir Letter Dispatcher",
+        stepsTitle: "Comment installer",
+        steps: [
+          "<b>Android / Chrome :</b> une fois ouvert, appuyez sur « Install app » dans l'en-tête, ou menu (⋮) → « Installer l'application » / « Ajouter à l'écran d'accueil ».",
+          "<b>iPhone / Safari :</b> le bouton « Partager » (carré avec une flèche) → « Sur l'écran d'accueil ».",
+          "<b>Windows / Mac (Chrome, Edge) :</b> l'icône ⊕ à droite de la barre d'adresse → « Installer »."
+        ],
+        linkCopyPrefix: "Ou copiez le lien : ",
+        linkInstall: "Guide détaillé étape par étape →",
+        footer: "Letter Dispatcher"
+      },
+      es: {
+        titleTag: "Instalar Letter Dispatcher",
+        h1: "Instala la aplicación en tu teléfono o computadora",
+        lede: "Toca el botón de abajo — se abrirá la aplicación, y el navegador ofrecerá instalarla como un programa normal.",
+        btn: "Abrir Letter Dispatcher",
+        stepsTitle: "Cómo instalar",
+        steps: [
+          "<b>Android / Chrome:</b> una vez abierta, toca «Install app» en la cabecera, o menú (⋮) → «Instalar aplicación» / «Añadir a pantalla de inicio».",
+          "<b>iPhone / Safari:</b> el botón «Compartir» (cuadrado con una flecha) → «Añadir a pantalla de inicio».",
+          "<b>Windows / Mac (Chrome, Edge):</b> el icono ⊕ a la derecha de la barra de direcciones → «Instalar»."
+        ],
+        linkCopyPrefix: "O copia el enlace: ",
+        linkInstall: "Guía detallada paso a paso →",
+        footer: "Letter Dispatcher"
+      }
+    };
+
+    function detectLang() {
+      var nav = (navigator.language || "en").toLowerCase();
+      if (nav.indexOf("ru") === 0) return "ru";
+      if (nav.indexOf("fr") === 0) return "fr";
+      if (nav.indexOf("es") === 0) return "es";
+      return "en";
+    }
+
+    function render(lang) {
+      var t = I18N[lang];
+      document.getElementById("tTitleTag").textContent = t.titleTag;
+      document.getElementById("tH1").textContent = t.h1;
+      document.getElementById("tLede").textContent = t.lede;
+      document.getElementById("tBtn").textContent = t.btn;
+      document.getElementById("tStepsTitle").textContent = t.stepsTitle;
+      document.getElementById("tStepsList").innerHTML = t.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("");
+      document.getElementById("tLinkCopy").firstChild.textContent = t.linkCopyPrefix;
+      document.getElementById("tLinkInstall").textContent = t.linkInstall;
+      document.getElementById("tFooter").textContent = t.footer;
+      document.documentElement.setAttribute("lang", lang);
+      var buttons = document.querySelectorAll("#langSwitch button");
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.toggle("active", buttons[i].dataset.lang === lang);
+      }
+    }
+
+    var buttons = document.querySelectorAll("#langSwitch button");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener("click", function () { render(this.dataset.lang); });
+    }
+
+    render(detectLang());
+  })();
+  </script>
 </body>
 </html>
